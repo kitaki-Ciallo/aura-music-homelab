@@ -362,7 +362,7 @@ const Controls: React.FC<ControlsProps> = ({
             (coverScale, controlScale) => `scale(${coverScale * controlScale})`
           ),
         }}
-        className="relative aspect-square w-64 md:w-72 lg:w-[300px] rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900 shadow-lg shadow-black/30 ring-1 ring-white/10 overflow-hidden mb-6"
+        className="relative aspect-square w-64 md:w-72 lg:w-[320px] xl:w-[400px] 2xl:w-[480px] rounded-3xl bg-gradient-to-br from-gray-800 to-gray-900 shadow-lg shadow-black/30 ring-1 ring-white/10 overflow-hidden mb-6"
       >
         {coverUrl ? (
           <SmartImage
@@ -473,7 +473,7 @@ const Controls: React.FC<ControlsProps> = ({
 
       {/* Controls Row - Flattened for Equal Spacing */}
       {/* Layout: [Mode] [Vol] [Prev] [Play] [Next] [Settings] [List] */}
-      <div className="w-full max-w-[380px] mt-6 px-2">
+      <div className="w-full max-w-[380px] xl:max-w-[420px] 2xl:max-w-[480px] mt-6 px-2">
         <div className="flex items-center justify-between w-full">
           {/* 1. Play Mode */}
           <button
