@@ -12,6 +12,7 @@ import { parseLyrics } from "../services/lyrics";
 import {
   fetchLyricsById,
   searchAndMatchLyrics,
+  mergeLyricsWithMetadata,
 } from "../services/lyricsService";
 import { audioResourceCache } from "../services/cache";
 
@@ -266,12 +267,12 @@ export const usePlayer = ({
   );
 
   const handlePlaylistAddition = useCallback(
-    (added: Song[], wasEmpty: boolean) => {
+    (added: Song[], wasEmpty: boolean, autoPlay: boolean = true) => {
       if (added.length === 0) return;
       setMatchStatus("idle");
       if (wasEmpty || currentIndex === -1) {
         setCurrentIndex(0);
-        setPlayState(PlayState.PLAYING);
+        setPlayState(autoPlay ? PlayState.PLAYING : PlayState.PAUSED);
       }
       if (playMode === PlayMode.SHUFFLE) {
         reorderForShuffle();
@@ -280,21 +281,7 @@ export const usePlayer = ({
     [currentIndex, playMode, reorderForShuffle],
   );
 
-  const mergeLyricsWithMetadata = useCallback(
-    (result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[] }) => {
-      const parsed = parseLyrics(result.lrc, result.tLrc, {
-        yrcContent: result.yrc,
-      });
-      const metadataCount = result.metadata.length;
-      const metadataLines = result.metadata.map((text, idx) => ({
-        time: -0.1 * (metadataCount - idx),
-        text,
-        isMetadata: true,
-      }));
-      return [...metadataLines, ...parsed].sort((a, b) => a.time - b.time);
-    },
-    [],
-  );
+
 
   const loadLyricsFile = useCallback(
     (file?: File) => {
@@ -382,6 +369,7 @@ export const usePlayer = ({
             updateSongInQueue(songId, {
               lyrics: mergeLyricsWithMetadata(result),
               needsLyricsMatch: false,
+              coverUrl: currentSong.coverUrl || result.coverUrl, // Use cloud cover if local is missing
             });
             markMatchSuccess();
           } else {
@@ -454,7 +442,6 @@ export const usePlayer = ({
   useEffect(() => {
     if (
       !currentSong ||
-      !currentSong.isNetease ||
       !currentSong.coverUrl ||
       (currentSong.colors && currentSong.colors.length > 0)
     ) {

@@ -254,7 +254,7 @@ export const fetchNeteaseSong = async (
 export const searchAndMatchLyrics = async (
   title: string,
   artist: string,
-): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[] } | null> => {
+): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[]; coverUrl?: string } | null> => {
   try {
     const songs = await searchNetEase(`${title} ${artist}`, { limit: 5 });
 
@@ -267,7 +267,13 @@ export const searchAndMatchLyrics = async (
     console.log(`Found Song ID: ${songId}`);
 
     const lyricsResult = await fetchLyricsById(songId);
-    return lyricsResult;
+    if (lyricsResult) {
+      return {
+        ...lyricsResult,
+        coverUrl: songs[0].coverUrl
+      };
+    }
+    return null;
   } catch (error) {
     console.error("Cloud lyrics match failed:", error);
     return null;
@@ -276,7 +282,7 @@ export const searchAndMatchLyrics = async (
 
 export const fetchLyricsById = async (
   songId: string,
-): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[] } | null> => {
+): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[]; coverUrl?: string } | null> => {
   try {
     // 使用網易雲音樂 API 獲取歌詞
     const lyricUrl = `${NETEASECLOUD_API_BASE}/lyric/new?id=${songId}`;
@@ -337,4 +343,22 @@ export const fetchLyricsById = async (
     console.error("Lyric fetch error", e);
     return null;
   }
+};
+
+import { parseLyrics } from "./lyrics";
+import { LyricLine } from "../types";
+
+export const mergeLyricsWithMetadata = (
+  result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[]; coverUrl?: string }
+): LyricLine[] => {
+  const parsed = parseLyrics(result.lrc, result.tLrc, {
+    yrcContent: result.yrc,
+  });
+  const metadataCount = result.metadata.length;
+  const metadataLines = result.metadata.map((text, idx) => ({
+    time: -0.1 * (metadataCount - idx),
+    text,
+    isMetadata: true,
+  }));
+  return [...metadataLines, ...parsed].sort((a, b) => a.time - b.time);
 };

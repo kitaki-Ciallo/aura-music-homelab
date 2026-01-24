@@ -12,6 +12,12 @@ import { usePlaylist } from "./hooks/usePlaylist";
 import { usePlayer } from "./hooks/usePlayer";
 import { keyboardRegistry } from "./services/keyboardRegistry";
 import MediaSessionController from "./components/MediaSessionController";
+import {
+  fetchLyricsById,
+  searchAndMatchLyrics,
+  mergeLyricsWithMetadata,
+} from "./services/lyricsService";
+import { extractColors } from "./services/utils";
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -128,6 +134,108 @@ const App: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Auto-load metadata.json
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        // Try to fetch metadata.json from the same directory as the app
+        const response = await fetch("./metadata.json");
+        if (!response.ok) return;
+
+        const songs = await response.json();
+        if (Array.isArray(songs) && songs.length > 0) {
+          // Process songs to ensure they have necessary fields
+          const processedSongs = songs.map((s: any) => ({
+            ...s,
+            // Ensure ID is unique if not present
+            id: s.id || `server-${Math.random().toString(36).substr(2, 9)}`,
+            // Initialize other fields
+            lyrics: [],
+            colors: [],
+            needsLyricsMatch: true,
+            isNetease: false
+          }));
+
+          // Add to playlist queue first!
+          playlist.setQueue(processedSongs);
+          playlist.setOriginalQueue(processedSongs);
+
+          handlePlaylistAddition(processedSongs, true, false);
+          toast.success(`Loaded ${processedSongs.length} songs from server`);
+
+          // Batch process metadata in background
+          processQueueMetadata(processedSongs, playlist.updateSongInQueue);
+        }
+      } catch (error) {
+        console.log("No metadata.json found or failed to load", error);
+      }
+    };
+
+    loadMetadata();
+  }, []);
+
+  const processQueueMetadata = async (
+    songs: Song[],
+    updateSong: (id: string, updates: Partial<Song>) => void
+  ) => {
+    const CONCURRENCY = 3;
+    const queue = [...songs];
+    let index = 0;
+
+    const processSong = async (song: Song) => {
+      if (!song.needsLyricsMatch) return;
+
+      try {
+        let result = null;
+        // Use imported functions from services
+        if (song.isNetease && song.neteaseId) {
+          result = await fetchLyricsById(song.neteaseId);
+        } else {
+          result = await searchAndMatchLyrics(song.title, song.artist);
+        }
+
+        if (result) {
+          const lyrics = mergeLyricsWithMetadata(result);
+          const coverUrl = song.coverUrl || result.coverUrl;
+          let colors = song.colors;
+
+          if (coverUrl && (!colors || colors.length === 0)) {
+            try {
+              colors = await extractColors(coverUrl);
+            } catch (e) {
+              console.warn("Color extraction failed", e);
+            }
+          }
+
+          updateSong(song.id, {
+            lyrics,
+            coverUrl,
+            colors,
+            needsLyricsMatch: false,
+          });
+        } else {
+          updateSong(song.id, { needsLyricsMatch: false });
+        }
+      } catch (e) {
+        console.warn("Metadata fetch failed for", song.title, e);
+        updateSong(song.id, { needsLyricsMatch: false });
+      }
+    };
+
+    const next = async () => {
+      while (index < queue.length) {
+        const song = queue[index++];
+        await processSong(song);
+      }
+    };
+
+    const workers = [];
+    for (let i = 0; i < CONCURRENCY; i++) {
+      workers.push(next());
+    }
+    await Promise.all(workers);
+  };
 
   const handleFileChange = async (files: FileList) => {
     const wasEmpty = playlist.queue.length === 0;

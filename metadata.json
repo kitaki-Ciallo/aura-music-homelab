@@ -1,5 +1,554 @@
-{
-  "name": "Aura Music",
-  "description": "A high-fidelity, immersive music player inspired by Apple Music. Features fluid animations, multi-language synchronized lyrics (original + translation), word-level timing support, and Gemini-powered song analysis.",
-  "requestFramePermissions": []
-}
+[
+  {
+    "id": "server-1",
+    "title": "宝島",
+    "artist": "北宇治高校吹奏楽部",
+    "fileUrl": "/CloudMusic/北宇治高校吹奏楽部%20-%20宝島.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-2",
+    "title": "一年の詩 ～吹奏楽のための (全国大会金賞 Ver.)",
+    "artist": "北宇治高校吹奏楽部",
+    "fileUrl": "/CloudMusic/北宇治高校吹奏楽部%20-%20一年の詩%20～吹奏楽のための%20(全国大会金賞%20Ver.).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-3",
+    "title": "音色の彼方",
+    "artist": "北宇治カルテット",
+    "fileUrl": "/CloudMusic/北宇治カルテット%20-%20音色の彼方.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-4",
+    "title": "カタオモイ - from CrosSing",
+    "artist": "長谷川育美",
+    "fileUrl": "/CloudMusic/長谷川育美%20-%20カタオモイ%20-%20from%20CrosSing.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-5",
+    "title": "Dear Moments",
+    "artist": "赤尾ひかる",
+    "fileUrl": "/CloudMusic/赤尾ひかる%20-%20Dear%20Moments.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-6",
+    "title": "自己肯定感爆上げ↑↑しゅきしゅきソング",
+    "artist": "初星学園,ヒゲドライバー,藤田ことね",
+    "fileUrl": "/CloudMusic/初星学園,ヒゲドライバー,藤田ことね%20-%20自己肯定感爆上げ↑↑しゅきしゅきソング.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-7",
+    "title": "キミの記憶",
+    "artist": "川村ゆみ,アトラスサウンドチーム",
+    "fileUrl": "/CloudMusic/川村ゆみ,アトラスサウンドチーム%20-%20キミの記憶.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-8",
+    "title": "Brave Song",
+    "artist": "多田葵",
+    "fileUrl": "/CloudMusic/多田葵%20-%20Brave%20Song.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-9",
+    "title": "天使にふれたよ!",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20天使にふれたよ!.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-10",
+    "title": "Cagayake!GIRLS [5人Ver.]",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20Cagayake!GIRLS%20[5人Ver.].flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-11",
+    "title": "Don't say lazy [5人Ver.]",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20Don't%20say%20lazy%20[5人Ver.].flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-12",
+    "title": "GO! GO! MANIAC",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20GO!%20GO!%20MANIAC.wav",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-13",
+    "title": "NO, Thank You!",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20NO,%20Thank%20You!.wav",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-14",
+    "title": "Utauyo!!MIRACLE",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20Utauyo!!MIRACLE.wav",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-15",
+    "title": "ごはんはおかず",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20ごはんはおかず.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-16",
+    "title": "ふわふわ時間",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20ふわふわ時間.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-17",
+    "title": "わたしの恋はホッチキス",
+    "artist": "放課後ティータイム",
+    "fileUrl": "/CloudMusic/放課後ティータイム%20-%20わたしの恋はホッチキス.wav",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-18",
+    "title": "トゥッティ!",
+    "artist": "黒沢ともよ,朝井彩加,豊田萌絵",
+    "fileUrl": "/CloudMusic/黒沢ともよ,朝井彩加,豊田萌絵%20-%20トゥッティ!.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-19",
+    "title": "今、僕、アンダーグラウンドから",
+    "artist": "結束バンド",
+    "fileUrl": "/CloudMusic/結束バンド%20-%20今、僕、アンダーグラウンドから.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-20",
+    "title": "青い春と西の空",
+    "artist": "結束バンド",
+    "fileUrl": "/CloudMusic/結束バンド%20-%20青い春と西の空.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-21",
+    "title": "星座になれたら",
+    "artist": "結束バンド",
+    "fileUrl": "/CloudMusic/結束バンド%20-%20星座になれたら.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-22",
+    "title": "ギターと孤独と蒼い惑星",
+    "artist": "結束バンド",
+    "fileUrl": "/CloudMusic/結束バンド%20-%20ギターと孤独と蒼い惑星.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-23",
+    "title": "スタッカート・デイズ",
+    "artist": "井口裕香,阿澄佳奈",
+    "fileUrl": "/CloudMusic/井口裕香,阿澄佳奈%20-%20スタッカート・デイズ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-24",
+    "title": "雨だれの歌",
+    "artist": "久保ユリカ,水瀬いのり",
+    "fileUrl": "/CloudMusic/久保ユリカ,水瀬いのり%20-%20雨だれの歌.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-25",
+    "title": "许巍-蓝莲哈（mm  猫猫怕痛惹 remix）",
+    "artist": "猫猫怕痛惹",
+    "fileUrl": "/CloudMusic/猫猫怕痛惹%20-%20许巍-蓝莲哈（mm%20%20猫猫怕痛惹%20remix）.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-26",
+    "title": "みちしるべ",
+    "artist": "茅原実里",
+    "fileUrl": "/CloudMusic/茅原実里%20-%20みちしるべ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-27",
+    "title": "カワキヲアメク",
+    "artist": "美波",
+    "fileUrl": "/CloudMusic/美波%20-%20カワキヲアメク.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-28",
+    "title": "ハレ晴レユカイ",
+    "artist": "平野綾,茅原実里,後藤邑子",
+    "fileUrl": "/CloudMusic/平野綾,茅原実里,後藤邑子%20-%20ハレ晴レユカイ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-29",
+    "title": "冒険でしょでしょ",
+    "artist": "平野綾",
+    "fileUrl": "/CloudMusic/平野綾%20-%20冒険でしょでしょ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-30",
+    "title": "God knows",
+    "artist": "平野綾",
+    "fileUrl": "/CloudMusic/平野綾%20-%20God%20knows.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-31",
+    "title": "もってけ！セーラーふく",
+    "artist": "神前暁,平野綾,加藤英美里",
+    "fileUrl": "/CloudMusic/神前暁,平野綾,加藤英美里%20-%20もってけ！セーラーふく.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-32",
+    "title": "小さな恋のうた",
+    "artist": "石見舞菜香",
+    "fileUrl": "/CloudMusic/石見舞菜香%20-%20小さな恋のうた.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-33",
+    "title": "動く、動く",
+    "artist": "水瀬いのり,久保ユリカ",
+    "fileUrl": "/CloudMusic/水瀬いのり,久保ユリカ%20-%20動く、動く.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-34",
+    "title": "三日月の舞 (麗奈 トランペットソロ Ver.)",
+    "artist": "松田彬人",
+    "fileUrl": "/CloudMusic/松田彬人%20-%20三日月の舞%20(麗奈%20トランペットソロ%20Ver.).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-35",
+    "title": "DREAM SOLISTER (Wind Orchestra Ver.)",
+    "artist": "松田彬人",
+    "fileUrl": "/CloudMusic/松田彬人%20-%20DREAM%20SOLISTER%20(Wind%20Orchestra%20Ver.).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-36",
+    "title": "命に嫌われている",
+    "artist": "宵崎奏",
+    "fileUrl": "/CloudMusic/宵崎奏%20-%20命に嫌われている.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-37",
+    "title": "LOVE 2000",
+    "artist": "遠野ひかる",
+    "fileUrl": "/CloudMusic/遠野ひかる%20-%20LOVE%202000.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-38",
+    "title": "ふゆびより",
+    "artist": "佐々木恵梨",
+    "fileUrl": "/CloudMusic/佐々木恵梨%20-%20ふゆびより.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-39",
+    "title": "天天天国地獄国 (feat. ななひら & P丸様。)",
+    "artist": "Aiobahn +81,ななひら,P丸様。",
+    "fileUrl": "/CloudMusic/Aiobahn%20+81,ななひら,P丸様。%20-%20天天天国地獄国%20(feat.%20ななひら%20&%20P丸様。).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-40",
+    "title": "Miku",
+    "artist": "Anamanaguchi,初音ミク",
+    "fileUrl": "/CloudMusic/Anamanaguchi,初音ミク%20-%20Miku.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-41",
+    "title": "天球(そら)のMúsica",
+    "artist": "Ave Mujica",
+    "fileUrl": "/CloudMusic/Ave%20Mujica%20-%20天球(そら)のMúsica.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-42",
+    "title": "Georgette Me, Georgette You",
+    "artist": "Ave Mujica",
+    "fileUrl": "/CloudMusic/Ave%20Mujica%20-%20Georgette%20Me,%20Georgette%20You.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-43",
+    "title": "Imprisoned XII",
+    "artist": "Ave Mujica",
+    "fileUrl": "/CloudMusic/Ave%20Mujica%20-%20Imprisoned%20XII.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-44",
+    "title": "KiLLKiSS",
+    "artist": "Ave Mujica",
+    "fileUrl": "/CloudMusic/Ave%20Mujica%20-%20KiLLKiSS.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-45",
+    "title": "キミの記憶 -Reload-",
+    "artist": "Azumi Takahashi アトラスサウンドチーム ATLUS GAME MUSIC",
+    "fileUrl": "/CloudMusic/Azumi%20Takahashi%20アトラスサウンドチーム%20ATLUS%20GAME%20MUSIC%20-%20キミの記憶%20-Reload-.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-46",
+    "title": "春日影",
+    "artist": "CRYCHIC",
+    "fileUrl": "/CloudMusic/CRYCHIC%20-%20春日影.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-47",
+    "title": "I Can't Wait (feat. GUMI)",
+    "artist": "d0tc0mmie,GUMI",
+    "fileUrl": "/CloudMusic/d0tc0mmie,GUMI%20-%20I%20Can't%20Wait%20(feat.%20GUMI).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-48",
+    "title": "only my railgun",
+    "artist": "fripSide",
+    "fileUrl": "/CloudMusic/fripSide%20-%20only%20my%20railgun.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-49",
+    "title": "My Song",
+    "artist": "Girls Dead Monster,marina",
+    "fileUrl": "/CloudMusic/Girls%20Dead%20Monster,marina%20-%20My%20Song.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-50",
+    "title": "My Soul, Your Beats!",
+    "artist": "Lia",
+    "fileUrl": "/CloudMusic/Lia%20-%20My%20Soul,%20Your%20Beats!.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-51",
+    "title": "Beneath the Mask -rain-",
+    "artist": "Lyn",
+    "fileUrl": "/CloudMusic/Lyn%20-%20Beneath%20the%20Mask%20-rain-.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-52",
+    "title": "春日影 (MyGO!!!!! ver.)",
+    "artist": "MyGO!!!!!",
+    "fileUrl": "/CloudMusic/MyGO!!!!!%20-%20春日影%20(MyGO!!!!!%20ver.).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-53",
+    "title": "栞",
+    "artist": "MyGO!!!!!",
+    "fileUrl": "/CloudMusic/MyGO!!!!!%20-%20栞.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-54",
+    "title": "美しきもの",
+    "artist": "Sound Horizon",
+    "fileUrl": "/CloudMusic/Sound%20Horizon%20-%20美しきもの.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-55",
+    "title": "Here, the world!",
+    "artist": "sumimi",
+    "fileUrl": "/CloudMusic/sumimi%20-%20Here,%20the%20world!.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-56",
+    "title": "DREAM SOLISTER",
+    "artist": "TRUE",
+    "fileUrl": "/CloudMusic/TRUE%20-%20DREAM%20SOLISTER.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-57",
+    "title": "ReCoda",
+    "artist": "TRUE",
+    "fileUrl": "/CloudMusic/TRUE%20-%20ReCoda.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-58",
+    "title": "Sincerely",
+    "artist": "TRUE",
+    "fileUrl": "/CloudMusic/TRUE%20-%20Sincerely.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-59",
+    "title": "サウンドスケープ",
+    "artist": "TRUE",
+    "fileUrl": "/CloudMusic/TRUE%20-%20サウンドスケープ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-60",
+    "title": "花の塔",
+    "artist": "さユり",
+    "fileUrl": "/CloudMusic/さユり%20-%20花の塔.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-61",
+    "title": "死別",
+    "artist": "シャノン,GUMI",
+    "fileUrl": "/CloudMusic/シャノン,GUMI%20-%20死別.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-62",
+    "title": "風になる",
+    "artist": "つじあやの",
+    "fileUrl": "/CloudMusic/つじあやの%20-%20風になる.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-63",
+    "title": "爆ぜて咲く",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20爆ぜて咲く.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-64",
+    "title": "空の箱 (井芹仁菜、河原木桃香)",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20空の箱%20(井芹仁菜、河原木桃香).flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-65",
+    "title": "名もなき何もかも",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20名もなき何もかも.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-66",
+    "title": "運命に賭けたい論理",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20運命に賭けたい論理.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-67",
+    "title": "雑踏、僕らの街",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20雑踏、僕らの街.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-68",
+    "title": "ダレモ",
+    "artist": "トゲナシトゲアリ",
+    "fileUrl": "/CloudMusic/トゲナシトゲアリ%20-%20ダレモ.flac",
+    "coverUrl": ""
+  }
+,
+  {
+    "id": "server-69",
+    "title": "晴る",
+    "artist": "ヨルシカ",
+    "fileUrl": "/CloudMusic/ヨルシカ%20-%20晴る.flac",
+    "coverUrl": ""
+  }
+
+]
