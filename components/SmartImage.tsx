@@ -205,9 +205,14 @@ const SmartImage: React.FC<SmartImageProps> = ({
 
     const loadImage = () => {
       if (canceled) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const displayWidth = normalizedSize.width * dpr;
+      const displayHeight = normalizedSize.height * dpr;
+
       const ratio = Math.min(
-        normalizedSize.width / imageElement.naturalWidth,
-        normalizedSize.height / imageElement.naturalHeight,
+        displayWidth / imageElement.naturalWidth,
+        displayHeight / imageElement.naturalHeight,
         1,
       );
       const targetWidth = Math.max(1, Math.round(imageElement.naturalWidth * ratio));

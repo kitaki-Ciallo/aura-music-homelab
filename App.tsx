@@ -17,7 +17,8 @@ import {
   searchAndMatchLyrics,
   mergeLyricsWithMetadata,
 } from "./services/lyricsService";
-import { extractColors } from "./services/utils";
+import { parseLyrics } from "./services/lyrics";
+import { extractColors, fetchAudioMetadata } from "./services/utils";
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -186,19 +187,60 @@ const App: React.FC = () => {
     const processSong = async (song: Song) => {
       if (!song.needsLyricsMatch) return;
 
+      let currentSongState = { ...song };
+
+      // 1. Try to fetch metadata from server file (ID3 tags) for server songs
+      // This mimics the behavior of local file import
+      if (currentSongState.id.startsWith("server-") && currentSongState.fileUrl) {
+        try {
+          const metadata = await fetchAudioMetadata(currentSongState.fileUrl);
+          const updates: Partial<Song> = {};
+          let hasUpdates = false;
+
+          if (metadata.picture) {
+            updates.coverUrl = metadata.picture;
+            currentSongState.coverUrl = metadata.picture;
+            try {
+              updates.colors = await extractColors(metadata.picture);
+              currentSongState.colors = updates.colors;
+            } catch (e) { }
+            hasUpdates = true;
+          }
+
+          if (metadata.lyrics) {
+            updates.lyrics = parseLyrics(metadata.lyrics);
+            currentSongState.lyrics = updates.lyrics;
+            hasUpdates = true;
+          }
+
+          if (hasUpdates) {
+            updateSong(song.id, updates);
+
+            // If we found lyrics, we don't need cloud match anymore
+            if (updates.lyrics && updates.lyrics.length > 0) {
+              updateSong(song.id, { needsLyricsMatch: false });
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Server metadata extraction failed", e);
+        }
+      }
+
       try {
         let result = null;
         // Use imported functions from services
-        if (song.isNetease && song.neteaseId) {
-          result = await fetchLyricsById(song.neteaseId);
+        if (currentSongState.isNetease && currentSongState.neteaseId) {
+          result = await fetchLyricsById(currentSongState.neteaseId);
         } else {
-          result = await searchAndMatchLyrics(song.title, song.artist);
+          result = await searchAndMatchLyrics(currentSongState.title, currentSongState.artist);
         }
 
         if (result) {
           const lyrics = mergeLyricsWithMetadata(result);
-          const coverUrl = song.coverUrl || result.coverUrl;
-          let colors = song.colors;
+          // Prioritize existing local cover (from ID3) over cloud match result
+          const coverUrl = currentSongState.coverUrl || result.coverUrl;
+          let colors = currentSongState.colors;
 
           if (coverUrl && (!colors || colors.length === 0)) {
             try {

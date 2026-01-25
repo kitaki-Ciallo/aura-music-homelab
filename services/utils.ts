@@ -112,7 +112,7 @@ export const mergeLyrics = (original: string, translation: string): string => {
 
 // Metadata Parser using jsmediatags
 export const parseAudioMetadata = (
-  file: File,
+  file: Blob | File,
 ): Promise<{
   title?: string;
   artist?: string;
@@ -179,6 +179,38 @@ export const parseAudioMetadata = (
       resolve({});
     }
   });
+};
+
+export const fetchAudioMetadata = async (
+  url: string,
+): Promise<{
+  title?: string;
+  artist?: string;
+  picture?: string;
+  lyrics?: string;
+}> => {
+  try {
+    // Try to fetch the first 2MB of the file which usually contains the ID3v2 tags and cover art
+    // Most high-res covers are within this range.
+    const response = await fetch(url, {
+      headers: { Range: "bytes=0-2097152" }, // 2MB
+    });
+
+    if (!response.ok && response.status !== 206) {
+      // Fallback to full fetch if Range is not supported or fails
+      // Note: This might be heavy for large files
+      const fullResponse = await fetch(url);
+      if (!fullResponse.ok) return {};
+      const blob = await fullResponse.blob();
+      return parseAudioMetadata(blob);
+    }
+
+    const blob = await response.blob();
+    return parseAudioMetadata(blob);
+  } catch (error) {
+    console.warn("Failed to fetch audio for metadata:", error);
+    return {};
+  }
 };
 
 export const extractColors = async (imageSrc: string): Promise<string[]> => {
