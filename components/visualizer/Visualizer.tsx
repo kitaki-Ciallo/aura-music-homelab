@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import audioProcessorUrl from './AudioProcessor.ts?worker&url';
 
 interface VisualizerProps {
@@ -15,6 +15,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
     const workerRef = useRef<Worker | null>(null);
     const audioContextRef = useRef<AudioContext | null>(null);
     const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+    const [canvasKey, setCanvasKey] = useState(0);
 
     // Effect 1: Audio Context and Worklet Initialization
     useEffect(() => {
@@ -68,9 +69,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
             }
         };
 
-        if (isPlaying) {
-            initAudio();
-        }
+        initAudio();
 
         return () => {
             // Cleanup logic if needed
@@ -79,15 +78,6 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
 
     // Effect 2: Worker Initialization
     useEffect(() => {
-        if (!isPlaying) {
-            if (workerRef.current) {
-                workerRef.current.postMessage({ type: 'DESTROY' });
-                workerRef.current.terminate();
-                workerRef.current = null;
-            }
-            return;
-        }
-
         const canvasEl = canvasRef.current;
         if (!canvasEl) {
             return;
@@ -104,16 +94,18 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
         }
 
         try {
+            const offscreen = canvasEl.transferControlToOffscreen();
+
             const worker = new Worker(new URL('./VisualizerWorker.ts', import.meta.url), {
                 type: 'module'
             });
             workerRef.current = worker;
 
             const dpr = window.devicePixelRatio || 1;
-            canvasEl.width = 320 * dpr;
-            canvasEl.height = 32 * dpr;
-
-            const offscreen = canvasEl.transferControlToOffscreen();
+            // Note: We can't set width/height on canvasEl after transfer, 
+            // but we can pass dpr to worker to handle scaling.
+            // Actually, we should set size BEFORE transfer if possible, or handle it in worker.
+            // But since we already transferred, we rely on worker config.
 
             const channel = new MessageChannel();
 
@@ -143,8 +135,11 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
                 }
             };
             sendPortToWorklet();
+
         } catch (e) {
-            console.error("Visualizer: Failed to initialize worker", e);
+            console.warn("Visualizer: Failed to initialize worker or transfer canvas", e);
+            // If transfer failed (likely due to Strict Mode double-invoke), force remount
+            setCanvasKey(prev => prev + 1);
         }
 
         return () => {
@@ -154,12 +149,11 @@ const Visualizer: React.FC<VisualizerProps> = ({ audioRef, isPlaying }) => {
                 workerRef.current = null;
             }
         };
-    }, [isPlaying]);
-
-    if (!isPlaying) return <div className="h-8 w-full"></div>;
+    }, [canvasKey]);
 
     return (
         <canvas
+            key={canvasKey}
             ref={canvasRef}
             width={320}
             height={32}

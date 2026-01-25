@@ -49,6 +49,8 @@ interface ControlsProps {
   showSettingsPopup: boolean;
   setShowSettingsPopup: (show: boolean) => void;
   isBuffering: boolean;
+  showVisualizer: boolean;
+  onToggleVisualizer: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -78,6 +80,8 @@ const Controls: React.FC<ControlsProps> = ({
   showSettingsPopup,
   setShowSettingsPopup,
   isBuffering,
+  showVisualizer,
+  onToggleVisualizer,
 }) => {
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const settingsContainerRef = useRef<HTMLDivElement>(null);
@@ -392,7 +396,7 @@ const Controls: React.FC<ControlsProps> = ({
 
       {/* Spectrum Visualizer */}
       <div className="w-full flex justify-center h-8 mb-2">
-        <Visualizer audioRef={audioRef} isPlaying={isPlaying} />
+        {showVisualizer && <Visualizer audioRef={audioRef} isPlaying={isPlaying} />}
       </div>
 
       {/* Progress Bar */}
@@ -569,6 +573,8 @@ const Controls: React.FC<ControlsProps> = ({
                   preservesPitch={preservesPitch}
                   onTogglePreservesPitch={onTogglePreservesPitch}
                   onSpeedChange={onSpeedChange}
+                  showVisualizer={showVisualizer}
+                  onToggleVisualizer={onToggleVisualizer}
                 />
               ) : null
             )}
@@ -652,6 +658,8 @@ interface SettingsPopupProps {
   preservesPitch: boolean;
   onTogglePreservesPitch: () => void;
   onSpeedChange: (speed: number) => void;
+  showVisualizer: boolean;
+  onToggleVisualizer: () => void;
 }
 
 const SettingsPopup: React.FC<SettingsPopupProps> = ({
@@ -660,6 +668,8 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
   onTogglePreservesPitch,
   speed,
   onSpeedChange,
+  showVisualizer,
+  onToggleVisualizer,
 }) => {
   const { speedH } = useSpring({
     speedH: ((speed - 0.5) / 1.5) * 100,
@@ -700,21 +710,41 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({
         <span className="text-[10px] font-medium text-white/60">Speed</span>
       </div>
 
-      {/* Toggle Preserves Pitch */}
-      <div className="flex flex-col items-center justify-end gap-2 w-12 pb-6">
-        <button
-          onClick={onTogglePreservesPitch}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${preservesPitch ? "bg-white/20 text-white" : "bg-white text-black"
-            }`}
-          title={preservesPitch ? "Tone Preserved" : "Vinyl Mode"}
-        >
-          <span className="text-xs font-bold">
-            {preservesPitch ? "Dig" : "Vin"}
+      {/* Toggles Column */}
+      <div className="flex flex-col gap-4">
+        {/* Toggle Preserves Pitch */}
+        <div className="flex flex-col items-center justify-end gap-2 w-12">
+          <button
+            onClick={onTogglePreservesPitch}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${preservesPitch ? "bg-white/20 text-white" : "bg-white text-black"
+              }`}
+            title={preservesPitch ? "Tone Preserved" : "Vinyl Mode"}
+          >
+            <span className="text-xs font-bold">
+              {preservesPitch ? "Dig" : "Vin"}
+            </span>
+          </button>
+          <span className="text-[10px] font-medium text-white/60 text-center leading-tight">
+            {preservesPitch ? "Digital" : "Vinyl"}
           </span>
-        </button>
-        <span className="text-[10px] font-medium text-white/60 text-center leading-tight">
-          {preservesPitch ? "Digital" : "Vinyl"}
-        </span>
+        </div>
+
+        {/* Toggle Visualizer */}
+        <div className="flex flex-col items-center justify-end gap-2 w-12">
+          <button
+            onClick={onToggleVisualizer}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors duration-200 ${showVisualizer ? "bg-white text-black" : "bg-white/20 text-white"
+              }`}
+            title={showVisualizer ? "Visualizer On" : "Visualizer Off"}
+          >
+            <span className="text-xs font-bold">
+              {showVisualizer ? "On" : "Off"}
+            </span>
+          </button>
+          <span className="text-[10px] font-medium text-white/60 text-center leading-tight">
+            Visual
+          </span>
+        </div>
       </div>
     </animated.div>
   );

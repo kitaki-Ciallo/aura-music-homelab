@@ -63,6 +63,7 @@ const App: React.FC = () => {
   const [showVolumePopup, setShowVolumePopup] = useState(false);
   const [showSettingsPopup, setShowSettingsPopup] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [showVisualizer, setShowVisualizer] = useState(true);
 
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [activePanel, setActivePanel] = useState<"controls" | "lyrics">(
@@ -127,7 +128,14 @@ const App: React.FC = () => {
   // Global Search Shortcut (Registered directly via useEffect for simplicity, or could use useKeyboardScope with high priority)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if (((e.metaKey || e.ctrlKey) && e.key === "k") || e.key === "f") {
+        // Don't trigger if user is typing in an input
+        if (
+          document.activeElement instanceof HTMLInputElement ||
+          document.activeElement instanceof HTMLTextAreaElement
+        ) {
+          return;
+        }
         e.preventDefault();
         setShowSearch((prev) => !prev);
       }
@@ -416,6 +424,8 @@ const App: React.FC = () => {
           setShowVolumePopup={setShowVolumePopup}
           showSettingsPopup={showSettingsPopup}
           setShowSettingsPopup={setShowSettingsPopup}
+          showVisualizer={showVisualizer}
+          onToggleVisualizer={() => setShowVisualizer((prev) => !prev)}
         />
 
         {/* Floating Playlist Panel */}
