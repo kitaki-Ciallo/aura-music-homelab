@@ -42,6 +42,8 @@ interface PlaylistPanelProps {
     onImport: (url: string) => Promise<boolean>;
     onRemove: (ids: string[]) => void;
     accentColor: string;
+    className?: string; // Allow overriding styles
+    style?: React.CSSProperties; // Allow overriding styles
 }
 
 const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
@@ -52,7 +54,9 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     onPlay,
     onImport,
     onRemove,
-    accentColor
+    accentColor,
+    className,
+    style: propStyle
 }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [visible, setVisible] = useState(false);
@@ -68,18 +72,18 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     const ITEM_HEIGHT = 74; // Approx height of each item (including margin)
     const OVERSCAN = 5;
 
-    // ESC key support using keyboard scope
+    // ESC key support
     useKeyboardScope(
         (e: KeyboardEvent) => {
             if (e.key === 'Escape' && !isAdding) {
                 e.preventDefault();
                 onClose();
-                return true; // Claim the event
+                return true;
             }
             return false;
         },
-        100, // High priority
-        isOpen, // Only active when panel is open
+        100,
+        isOpen
     );
 
     // Handle animation visibility with react-spring
@@ -88,6 +92,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
         enter: { opacity: 1, transform: 'translateY(0px) scale(1)' },
         leave: { opacity: 0, transform: 'translateY(20px) scale(0.95)' },
         config: { tension: 280, friction: 24 }, // Rebound feel
+        immediate: !!className, // Disable spring animation if custom class is provided (likely sidebar mode)
         onRest: () => {
             if (!isOpen) {
                 setIsEditing(false);
@@ -117,7 +122,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (isOpen && !isAdding && panelRef.current && !panelRef.current.contains(event.target as Node)) {
-                onClose();
+                if (!className) onClose();
             }
         };
 
@@ -127,7 +132,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isOpen, onClose, isAdding]);
+    }, [isOpen, onClose, isAdding, className]);
 
     const handleImport = async (url: string) => {
         const success = await onImport(url);
@@ -166,9 +171,9 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
         setScrollTop(e.currentTarget.scrollTop);
     };
 
-    const { virtualItems, totalHeight, startOffset } = useMemo(() => {
+    const { virtualItems, totalHeight } = useMemo(() => {
         const totalHeight = queue.length * ITEM_HEIGHT;
-        const containerHeight = 600; // Approx max height
+        const containerHeight = 800; // Approx max height + buffer
 
         let startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
         let endIndex = Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT);
@@ -178,18 +183,31 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
 
         const virtualItems = [];
         for (let i = startIndex; i < endIndex; i++) {
-            virtualItems.push({
-                ...queue[i],
-                index: i
-            });
+            if (queue[i]) {
+                virtualItems.push({
+                    ...queue[i],
+                    index: i
+                });
+            }
         }
 
         return {
             virtualItems,
-            totalHeight,
-            startOffset: startIndex * ITEM_HEIGHT
+            totalHeight
         };
     }, [queue, scrollTop]);
+
+    // Default styles for floating popover mode
+    const defaultClasses = `
+        absolute bottom-24 -right-8 z-50
+        w-[340px] 
+        bg-black/10 backdrop-blur-[100px] saturate-150
+        rounded-[32px] 
+        shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
+        border border-white/5
+        flex flex-col overflow-hidden
+        origin-bottom-right
+    `;
 
     return (
         <>
@@ -197,17 +215,12 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
             {transitions((style, item) => item && (
                 <animated.div
                     ref={panelRef}
-                    style={{ ...style, maxHeight: '60vh' }}
-                    className={`
-                        absolute bottom-24 -right-8 z-50
-                        w-[340px] 
-                        bg-black/10 backdrop-blur-[100px] saturate-150
-                        rounded-[32px] 
-                        shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
-                        border border-white/5
-                        flex flex-col overflow-hidden
-                        origin-bottom-right
-                    `}
+                    style={{
+                        ...style,
+                        maxHeight: className ? 'none' : '60vh', // Remove max-height constraint in sidebar mode
+                        ...propStyle
+                    }}
+                    className={className || defaultClasses}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* iOS 18 Style Header */}
@@ -325,7 +338,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-gray-700 text-white/20 text-[10px]">♪</div>
-                                               )}
+                                                )}
 
                                                 {/* Redesigned Now Playing Indicator (Equalizer) */}
                                                 {isCurrent && !isEditing && (

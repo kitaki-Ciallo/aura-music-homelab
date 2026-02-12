@@ -89,6 +89,11 @@ export const usePlaylist = () => {
     setOriginalQueue((prev) => prev.filter((song) => !ids.includes(song.id)));
   }, []);
 
+  const replaceAll = useCallback((songs: Song[]) => {
+    setQueue(songs);
+    setOriginalQueue(songs);
+  }, []);
+
   const addLocalFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileList =
@@ -148,6 +153,17 @@ export const usePlaylist = () => {
           const metadata = await parseAudioMetadata(file);
           if (metadata.title) title = metadata.title;
           if (metadata.artist) artist = metadata.artist;
+          let album = metadata.album || "Unknown Album";
+
+          // Fallback: Parsing from filename "Artist - Title" if metadata missing
+          if (artist === "Unknown Artist" && nameParts.length > 1) {
+            artist = nameParts[0].trim();
+            // If title was still basename, update it too
+            if (title === basename) {
+              title = nameParts[1].trim();
+            }
+          }
+
           if (metadata.picture) {
             coverUrl = metadata.picture;
             colors = await extractColors(coverUrl);
@@ -211,6 +227,7 @@ export const usePlaylist = () => {
           id: `local-${Date.now()}-${i}`,
           title,
           artist,
+          album,
           fileUrl: url,
           coverUrl,
           lyrics,
@@ -294,5 +311,6 @@ export const usePlaylist = () => {
     importFromUrl,
     setQueue,
     setOriginalQueue,
+    replaceAll,
   };
 };

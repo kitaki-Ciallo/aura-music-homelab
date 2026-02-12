@@ -13,6 +13,8 @@ import {
   fetchLyricsById,
   searchAndMatchLyrics,
   mergeLyricsWithMetadata,
+  fetchLocalLyrics,
+  saveLocalLyrics,
 } from "../services/lyricsService";
 import { audioResourceCache } from "../services/cache";
 
@@ -311,7 +313,8 @@ export const usePlayer = ({
     const songId = currentSong.id;
     const songTitle = currentSong.title;
     const songArtist = currentSong.artist;
-    const needsLyricsMatch = currentSong.needsLyricsMatch;
+    // Default to true if not explicitly set to false (i.e. undefined)
+    const needsLyricsMatch = currentSong.needsLyricsMatch ?? true;
     const existingLyrics = currentSong.lyrics ?? [];
     const isNeteaseSong = currentSong.isNetease;
     const songNeteaseId = currentSong.neteaseId;
@@ -344,6 +347,22 @@ export const usePlayer = ({
     const fetchLyrics = async () => {
       setMatchStatus("matching");
       try {
+        // Step 1: Check local lyrics first
+        if (currentSong.fileUrl) {
+          const localLyrics = await fetchLocalLyrics(currentSong.fileUrl);
+          if (cancelled) return;
+          if (localLyrics) {
+            // Found local lyrics
+            const parsed = parseLyrics(localLyrics);
+            updateSongInQueue(songId, {
+              lyrics: parsed,
+              needsLyricsMatch: false,
+            });
+            markMatchSuccess();
+            return;
+          }
+        }
+
         if (isNeteaseSong && songNeteaseId) {
           const raw = await withTimeout(
             fetchLyricsById(songNeteaseId),
@@ -355,6 +374,10 @@ export const usePlayer = ({
               lyrics: mergeLyricsWithMetadata(raw),
               needsLyricsMatch: false,
             });
+            // Auto-save to local
+            if (currentSong.fileUrl && raw.lrc) {
+              saveLocalLyrics(currentSong.fileUrl, raw.lrc);
+            }
             markMatchSuccess();
           } else {
             markMatchFailed();
@@ -371,6 +394,10 @@ export const usePlayer = ({
               needsLyricsMatch: false,
               coverUrl: currentSong.coverUrl || result.coverUrl, // Use cloud cover if local is missing
             });
+            // Auto-save to local
+            if (currentSong.fileUrl && result.lrc) {
+              saveLocalLyrics(currentSong.fileUrl, result.lrc);
+            }
             markMatchSuccess();
           } else {
             markMatchFailed();

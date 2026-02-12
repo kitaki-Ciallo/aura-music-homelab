@@ -116,6 +116,7 @@ export const parseAudioMetadata = (
 ): Promise<{
   title?: string;
   artist?: string;
+  album?: string;
   picture?: string;
   lyrics?: string;
 }> => {
@@ -161,6 +162,7 @@ export const parseAudioMetadata = (
             resolve({
               title: tags.title,
               artist: tags.artist,
+              album: tags.album, // Add album extraction
               picture: pictureUrl,
               lyrics: lyricsText,
             });

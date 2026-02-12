@@ -4,10 +4,10 @@ import { UIBackgroundRender } from "./background/renderer/UIBackgroundRender";
 import { WebWorkerBackgroundRender } from "./background/renderer/WebWorkerBackgroundRender";
 
 const desktopGradientDefaults = [
-  "rgb(60, 20, 80)",
-  "rgb(100, 40, 60)",
-  "rgb(20, 20, 40)",
-  "rgb(40, 40, 90)",
+  "#ffffff",
+  "#ff00ff",
+  "#f5f5f5",
+  "#e050e0",
 ];
 
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;

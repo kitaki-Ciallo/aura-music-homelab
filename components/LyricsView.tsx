@@ -114,12 +114,15 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     const WINDOW_SIZE = 5;
 
     lyrics.forEach((line, index) => {
+      // Guard against invalid lines
+      if (!line || typeof line.time !== 'number') return;
+
       const isInterlude = line.isInterlude || line.text === "...";
 
       let duration = 0;
       if (isInterlude) {
         const nextLine = lyrics[index + 1];
-        if (nextLine) {
+        if (nextLine && typeof nextLine.time === 'number') {
           duration = nextLine.time - line.time;
         }
       }
@@ -487,21 +490,6 @@ const LyricsView: React.FC<LyricsViewProps> = ({
     }
   };
 
-  if (!lyrics.length) {
-    return (
-      <div className="h-[85vh] lg:h-[65vh] flex flex-col items-center justify-center text-white/40 select-none">
-        {matchStatus === "matching" ? (
-          <div className="animate-pulse">Syncing Lyrics...</div>
-        ) : (
-          <>
-            <div className="text-4xl mb-4 opacity-50">♪</div>
-            <div>Play music to view lyrics</div>
-          </>
-        )}
-      </div>
-    );
-  }
-
   // Manual wheel event attachment to fix passive listener warning
   useEffect(() => {
     const el = containerRef.current;
@@ -517,11 +505,27 @@ const LyricsView: React.FC<LyricsViewProps> = ({
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [handlers]); // handlers needs to be stable or we re-attach often. 
-  // If handlers changes every render, this effect runs every render.
-  // Let's check useLyricsPhysics. It returns a new object { ... } every render.
-  // This is suboptimal for useEffect deps.
-  // However, fixing the "unable to preventDefault" is the priority.
+  }, [handlers]);
+
+  if (!lyrics.length) {
+    return (
+      <div className="h-[85vh] lg:h-[65vh] flex flex-col items-center justify-center text-white/40 select-none">
+        {matchStatus === "matching" ? (
+          <div className="animate-pulse">Syncing Lyrics...</div>
+        ) : matchStatus === "failed" ? (
+          <>
+            <div className="text-4xl mb-4 opacity-50">✕</div>
+            <div>No lyrics found</div>
+          </>
+        ) : (
+          <>
+            <div className="text-4xl mb-4 opacity-50">♪</div>
+            <div>Play music to view lyrics</div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

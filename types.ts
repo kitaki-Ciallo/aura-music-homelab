@@ -27,6 +27,7 @@ export interface Song {
   isNetease?: boolean;
   neteaseId?: string;
   album?: string;
+  duration?: number;
 }
 
 export enum PlayState {

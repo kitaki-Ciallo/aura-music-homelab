@@ -60,8 +60,9 @@ const findTranslation = (
 
   // Try nearby matches with directional tolerance
   const isPrecise = Boolean(line.isPreciseTiming);
-  const forwardTolerance = isPrecise ? 1.0 : 0.35;
-  const backwardTolerance = isPrecise ? 0.35 : 0.2;
+  // Relax tolerance for standard LRC (imprecise) to handle common offsets
+  const forwardTolerance = isPrecise ? 1.0 : 0.6;
+  const backwardTolerance = isPrecise ? 0.35 : 0.6;
 
   let bestKey: number | null = null;
   let bestDiff = Infinity;

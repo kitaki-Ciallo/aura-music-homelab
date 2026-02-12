@@ -1,4 +1,51 @@
-import { fetchViaProxy } from "./utils";
+export const fetchViaProxy = async (url: string, options: RequestInit = {}) => {
+  try {
+    const encodedUrl = encodeURIComponent(url);
+    const response = await fetch(`/api/netease?url=${encodedUrl}`, options);
+    if (!response.ok) {
+      throw new Error(`Proxy error: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Proxy fetch failed:", error);
+  }
+};
+
+export const fetchLocalLyrics = async (fileUrl: string) => {
+  try {
+    // Remove /music/ prefix to get relative path
+    const relativePath = fileUrl.replace(/^\/music\//, '');
+    const response = await fetch(`/api/lyrics?file=${encodeURIComponent(relativePath)}`);
+    if (response.ok) {
+      const text = await response.text();
+      return text;
+    }
+    return null;
+  } catch (error) {
+    // console.warn("Local lyrics fetch failed:", error);
+    return null;
+  }
+}
+
+export const saveLocalLyrics = async (fileUrl: string, lyrics: string) => {
+  try {
+    const relativePath = fileUrl.replace(/^\/music\//, '');
+    await fetch('/api/lyrics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        file: relativePath,
+        lyrics
+      })
+    });
+  } catch (error) {
+    console.error("Failed to save local lyrics:", error);
+  }
+}
+
+
 
 const LYRIC_API_BASE = "https://163api.qijieya.cn";
 const METING_API = "https://api.qijieya.cn/meting/";
