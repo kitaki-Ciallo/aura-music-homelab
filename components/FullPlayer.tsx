@@ -47,7 +47,18 @@ const FullPlayer: React.FC = () => {
     // showPlaylist is now in context
     const [showVolumePopup, setShowVolumePopup] = useState(false);
     const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-    const accentColor = currentSong?.colors?.[0] || "#a855f7";
+
+    // Persistent color state to prevent flashing
+    const [displayColors, setDisplayColors] = useState<string[] | undefined>(currentSong?.colors);
+    const [displayAccentColor, setDisplayAccentColor] = useState<string>(currentSong?.colors?.[0] || "#a855f7");
+
+    // Update colors only when we have valid new ones
+    useEffect(() => {
+        if (currentSong?.colors && currentSong.colors.length > 0) {
+            setDisplayColors(currentSong.colors);
+            setDisplayAccentColor(currentSong.colors[0]);
+        }
+    }, [currentSong?.colors]);
 
     // Detect mobile layout
     useEffect(() => {
@@ -76,8 +87,7 @@ const FullPlayer: React.FC = () => {
 
     return (
         <div className={`fixed inset-0 z-[100] flex flex-col ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} bg-transparent`}>
-            {/* Background placeholder to prevent black flash before FluidBackground loads */}
-            <div className="absolute inset-0 bg-[#3c1450] -z-10 transition-colors duration-500" style={{ backgroundColor: accentColor }}></div>
+            {/* Background placeholder removed to allow GlobalBackground to show through until FluidBackground loads */}
 
             <style>{`
                 @keyframes slideInUp {
@@ -108,7 +118,7 @@ const FullPlayer: React.FC = () => {
 
             <FluidBackground
                 key={isMobileLayout ? "mobile" : "desktop"}
-                colors={currentSong?.colors && currentSong.colors.length > 0 ? currentSong.colors : undefined}
+                colors={displayColors}
                 coverUrl={currentSong?.coverUrl}
                 isPlaying={playState === PlayState.PLAYING}
                 isMobileLayout={isMobileLayout}
@@ -147,7 +157,7 @@ const FullPlayer: React.FC = () => {
                             playMode={playMode}
                             onToggleMode={toggleMode}
                             onTogglePlaylist={() => setShowPlaylist(!showPlaylist)}
-                            accentColor={accentColor}
+                            accentColor={displayAccentColor}
                             volume={volume}
                             onVolumeChange={setVolume}
                             speed={speed}
@@ -179,6 +189,42 @@ const FullPlayer: React.FC = () => {
                     />
                 </div>
             </div>
+
+            {/* Playlist Sidebar Overlay (Local to FullPlayer) */}
+            {showPlaylist && (
+                <div className="absolute inset-x-0 top-0 bottom-0 z-[120] bg-white/10 backdrop-blur-sm flex justify-end animate-in fade-in duration-300 text-white">
+                    <div className="w-full max-w-sm h-full bg-white/10 backdrop-blur-3xl border-l border-white/10 shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300">
+                        <div className="p-4 flex items-center justify-between border-b border-white/10">
+                            <h2 className="text-xl font-bold">Queue</h2>
+                            <button
+                                onClick={() => setShowPlaylist(false)}
+                                className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                            >
+                                <ChevronDown size={20} className="rotate-[-90deg]" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <PlaylistPanel
+                                isOpen={showPlaylist}
+                                onClose={() => setShowPlaylist(false)}
+                                queue={queue}
+                                currentSongId={currentSong?.id}
+                                onPlay={playIndex}
+                                onImport={importFromUrl}
+                                onRemove={removeSongs}
+                                accentColor={displayAccentColor}
+                                className="w-full h-full bg-transparent shadow-none border-none p-0 overflow-hidden flex flex-col"
+                                style={{ maxHeight: 'none', borderRadius: 0, position: 'relative', bottom: 'auto', right: 'auto' }}
+                            />
+                        </div>
+                    </div>
+                    {/* Backdrop click to close */}
+                    <div
+                        className="absolute inset-0 -z-10"
+                        onClick={() => setShowPlaylist(false)}
+                    />
+                </div>
+            )}
 
         </div>
     );

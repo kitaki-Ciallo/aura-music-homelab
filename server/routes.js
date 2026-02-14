@@ -92,6 +92,57 @@ router.get('/songs', async (req, res) => {
                 if (metadata.common.album) album = metadata.common.album;
                 if (metadata.format.duration) duration = metadata.format.duration;
 
+                // Check for sidecar JSON for overrides (Artist, Title, Cover, etc.)
+                const jsonPath = file.replace(path.extname(file), '.json');
+                if (fs.existsSync(jsonPath)) {
+                    try {
+                        const jsonContent = fs.readFileSync(jsonPath, 'utf8');
+                        const jsonData = JSON.parse(jsonContent);
+
+                        if (jsonData.title) title = jsonData.title;
+                        if (jsonData.artist) artist = jsonData.artist;
+                        if (jsonData.album) album = jsonData.album;
+                        // We will check coverUrl later
+                    } catch (e) {
+                        console.warn(`[Metadata] Failed to parse sidecar JSON for ${path.basename(file)}`);
+                    }
+                }
+
+                // Helper to detect garbage/mojibake (simple heuristic)
+                const isGarbage = (str) => {
+                    if (!str) return true;
+                    // Check for replacement characters
+                    if (str.includes('')) return true;
+                    // Check for high density of special characters often seen in encoding errors
+                    // e.g. "$o$?$7", "%D%#", etc.
+                    if (/^[\x20-\x7E]*$/.test(str)) {
+                        // ASCII only, check for noise
+                        const noise = (str.match(/[%$#@!&^*?]/g) || []).length;
+                        if (noise > str.length * 0.4 && str.length > 5) return true;
+                    }
+                    return false;
+                };
+
+                // WAV Fallback: parsing filename if metadata is missing, generic, or garbage
+                // Assuming format: "Artist - Title.ext" or just "Title.ext"
+                // For WAV files, we trust filename more if tags look suspicious
+                const isWav = path.extname(file).toLowerCase() === '.wav';
+                const hasTags = title !== path.basename(file, path.extname(file)) && title !== 'Unknown Title';
+
+                if (!hasTags || artist === 'Unknown Artist' || isGarbage(title) || isGarbage(artist)) {
+                    // Try parsing filename
+                    const basename = path.basename(file, path.extname(file));
+                    const parts = basename.split(' - ');
+                    if (parts.length >= 2) {
+                        artist = parts[0].trim();
+                        title = parts.slice(1).join(' - ').trim();
+                        // console.log(`[Metadata] Fallback/Repair for ${path.basename(file)} -> ${artist} - ${title}`);
+                    } else if (!hasTags || isGarbage(title)) {
+                        // If we have no separator but title is bad, use basename
+                        title = basename;
+                    }
+                }
+
                 // Debug log
                 if (duration === 0) {
                     console.log(`[Metadata] No duration found for: ${path.basename(file)}`);
@@ -111,6 +162,21 @@ router.get('/songs', async (req, res) => {
                         coverUrl = `/music/${coverPath.split(path.sep).join('/')}`;
                         externalCoverFound = true;
                         break;
+                    }
+                }
+
+                // Check sidecar JSON for coverUrl if not found
+                if (!externalCoverFound) {
+                    const jsonPath = file.replace(path.extname(file), '.json');
+                    if (fs.existsSync(jsonPath)) {
+                        try {
+                            const jsonContent = fs.readFileSync(jsonPath, 'utf8');
+                            const jsonData = JSON.parse(jsonContent);
+                            if (jsonData.coverUrl) {
+                                coverUrl = jsonData.coverUrl;
+                                externalCoverFound = true;
+                            }
+                        } catch (e) { }
                     }
                 }
 
@@ -170,7 +236,7 @@ router.get('/cover', async (req, res) => {
     }
 });
 
-// GET /api/lyrics - Get local lyrics
+// GET /api/lyrics - Get local lyrics (JSON first, then LRC)
 router.get('/lyrics', (req, res) => {
     const { file } = req.query;
     if (!file) {
@@ -178,16 +244,20 @@ router.get('/lyrics', (req, res) => {
     }
 
     const songPath = path.join(MUSIC_DIR, decodeURIComponent(file));
+    const jsonPath = songPath.replace(path.extname(songPath), '.json');
     const lrcPath = songPath.replace(path.extname(songPath), '.lrc');
 
-    if (fs.existsSync(lrcPath)) {
+    if (fs.existsSync(jsonPath)) {
+        res.setHeader('Content-Type', 'application/json');
+        res.send(fs.readFileSync(jsonPath, 'utf8'));
+    } else if (fs.existsSync(lrcPath)) {
         res.send(fs.readFileSync(lrcPath, 'utf8'));
     } else {
         res.status(404).send('No local lyrics found');
     }
 });
 
-// POST /api/lyrics - Save lyrics locally
+// POST /api/lyrics - Save lyrics locally (JSON or LRC)
 router.post('/lyrics', express.json(), (req, res) => {
     const { file, lyrics } = req.body;
     if (!file || !lyrics) {
@@ -201,9 +271,29 @@ router.post('/lyrics', express.json(), (req, res) => {
             return res.status(403).send('Invalid path');
         }
 
-        const lrcPath = songPath.replace(path.extname(songPath), '.lrc');
-        fs.writeFileSync(lrcPath, lyrics, 'utf8');
-        console.log(`[Lyrics] Saved local lyrics for ${path.basename(file)}`);
+        // Check if lyrics is an object (JSON) or string (LRC)
+        // If string, check if it looks like JSON
+        let isJson = false;
+        let content = lyrics;
+
+        if (typeof lyrics === 'object') {
+            isJson = true;
+            content = JSON.stringify(lyrics, null, 2);
+        } else {
+            try {
+                // Try parsing as JSON to see if it is valid JSON string
+                JSON.parse(lyrics);
+                isJson = true;
+            } catch (e) {
+                isJson = false;
+            }
+        }
+
+        const ext = isJson ? '.json' : '.lrc';
+        const destPath = songPath.replace(path.extname(songPath), ext);
+
+        fs.writeFileSync(destPath, content, 'utf8');
+        console.log(`[Lyrics] Saved local lyrics (${ext}) for ${path.basename(file)}`);
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving lyrics:', error);

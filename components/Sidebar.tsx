@@ -9,7 +9,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ playlists }) => {
     return (
-        <div className="w-64 h-full bg-black/10 backdrop-blur-md border-r border-white/5 flex flex-col pt-6">
+        <div className="w-64 h-full bg-white/10 backdrop-blur-md border-r border-white/5 flex flex-col pt-6">
             <div className="px-6 mb-8">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-pink-500 bg-clip-text text-transparent">
                     Aura Music
@@ -51,6 +51,16 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists }) => {
                         >
                             <Disc size={18} />
                             Albums
+                        </NavLink>
+                        <NavLink
+                            to="/search"
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white hover:bg-white/5'
+                                }`
+                            }
+                        >
+                            <Search size={18} />
+                            Search
                         </NavLink>
                     </div>
                 </div>

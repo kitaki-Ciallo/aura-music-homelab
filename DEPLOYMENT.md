@@ -9,6 +9,10 @@
 ## 2. 前端构建
 在项目根目录下执行：
 ```bash
+# 1. 创建 .env 文件并填入 Gemini API Key
+echo "GEMINI_API_KEY=your_api_key_here" > .env
+
+# 2. 安装依赖并构建
 npm install
 npm run build
 ```
@@ -36,8 +40,8 @@ npm run build
    ```
 2. 填入项目中 `music_homelab.conf` 的内容，并注意修改以下关键项：
    - `root /var/www/music_homelab;`: 修改为 `dist` 内容存放的路径。
-   - `location /music/ { alias /path/to/your/music/; }`: 修改为服务器音乐文件的**绝对路径**。
    - `proxy_pass http://127.0.0.1:3002;`: 确保端口与后端启动端口一致。
+   - **注意**：现在的配置将 `/music/` 路径也转发到了后端。这意味着 Nginx 不需要知道音乐的具体路径，只需在后端启动时通过 `MUSIC_DIR` 环境变量指定即可。
 3. 检查并运行：
    ```bash
    sudo nginx -t

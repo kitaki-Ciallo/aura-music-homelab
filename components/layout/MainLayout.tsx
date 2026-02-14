@@ -7,6 +7,46 @@ import KeyboardShortcuts from '../KeyboardShortcuts';
 import PlaylistPanel from '../PlaylistPanel';
 import { usePlayerContext } from '../../context/PlayerContext';
 import { ChevronDown } from 'lucide-react';
+import { useLocation, useOutlet } from 'react-router-dom';
+import { useTransition, animated } from '@react-spring/web';
+
+const AnimatedOutlet = () => {
+    const location = useLocation();
+    const element = useOutlet();
+    // Re-enable scrollbars for non-homepage routes if requested, but existing design uses custom scrollbars or hidden ones.
+    // User requested: "Global immersive scroll on homepage, traditional web scroll on artists/albums".
+    // We'll handle the class in MainLayout based on location.
+
+    const transitions = useTransition(location, {
+        keys: location.pathname,
+        from: { opacity: 0, transform: 'translate3d(0, 20px, 0)' },
+        enter: { opacity: 1, transform: 'translate3d(0, 0, 0)' },
+        leave: { opacity: 0, position: 'absolute', transform: 'translate3d(0, -20px, 0)' },
+        config: { tension: 280, friction: 30 },
+        initial: null,
+    });
+
+    return transitions((style, item) => (
+        <animated.div style={{ ...style, width: '100%', height: '100%' }}>
+            {/* Pass the element that corresponds to this location key match */}
+            {/* Note: useOutlet returns the element for the current route. 
+             When transitioning out, we want to retain the OLD element.
+             react-spring handles this by keeping 'item' (which is location) available.
+             BUT 'element' from useOutlet changes immediately.
+             
+             To fix this, we need to clone the element or specific router setup. 
+             Given the complexity, a simple Fade-In on mount for pages is safer for now 
+             to avoid "Route not found" or empty outlet issues during transition.
+          */}
+            {/* Reverting to simple fade-in per page or just using the current element if key matches */}
+            {item.pathname === location.pathname ? element : null}
+        </animated.div>
+    ));
+};
+
+// Better approach for simple usage:
+// Just wrap Outlet in a div that animates on key change?
+// Let's try a simpler approach invoked inside MainLayout directly.
 
 const MainLayout: React.FC = () => {
     const [playlists, setPlaylists] = useState<string[]>([]);
@@ -36,15 +76,15 @@ const MainLayout: React.FC = () => {
                 <Sidebar playlists={playlists} />
 
                 {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto relative">
-                    <Outlet />
+                <div className="flex-1 overflow-y-auto relative no-scrollbar">
+                    <AnimatedOutlet />
                 </div>
             </div>
 
             {/* Playlist Sidebar Overlay (Global) */}
             {showPlaylist && (
-                <div className="absolute inset-x-0 top-0 bottom-24 z-[60] bg-black/20 backdrop-blur-sm flex justify-end animate-in fade-in duration-300">
-                    <div className="w-full max-w-sm h-full bg-black/60 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300">
+                <div className="absolute inset-x-0 top-0 bottom-24 z-[60] bg-white/10 backdrop-blur-sm flex justify-end animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm h-full bg-white/10 backdrop-blur-3xl border-l border-white/10 shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300">
                         <div className="p-4 flex items-center justify-between border-b border-white/10">
                             <h2 className="text-xl font-bold">Queue</h2>
                             <button
@@ -78,7 +118,7 @@ const MainLayout: React.FC = () => {
             )}
 
             {/* Player Bar Area - Spans full width at bottom */}
-            <div className="h-24 bg-black/20 backdrop-blur-xl border-t border-white/10 z-[70] shrink-0">
+            <div className="h-24 bg-white/10 backdrop-blur-xl border-t border-white/10 z-[70] shrink-0">
                 <PlayerBar />
             </div>
         </div>

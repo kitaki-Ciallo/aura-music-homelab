@@ -13,6 +13,7 @@ import Albums from './pages/Albums';
 import Playlist from './pages/Playlist';
 import FullPlayer from './components/FullPlayer';
 import GlobalBackground from './components/GlobalBackground';
+import Search from './pages/Search';
 
 const App: React.FC = () => {
   return (
@@ -26,6 +27,7 @@ const App: React.FC = () => {
               <Route path="playlist/:name" element={<Playlist />} />
               <Route path="artists" element={<Artists />} />
               <Route path="albums" element={<Albums />} />
+              <Route path="search" element={<Search />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

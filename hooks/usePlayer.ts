@@ -351,9 +351,18 @@ export const usePlayer = ({
         if (currentSong.fileUrl) {
           const localLyrics = await fetchLocalLyrics(currentSong.fileUrl);
           if (cancelled) return;
+
           if (localLyrics) {
             // Found local lyrics
-            const parsed = parseLyrics(localLyrics);
+            let parsed;
+            if (typeof localLyrics === 'object') {
+              // It's JSON (YRC/LRC combined)
+              parsed = mergeLyricsWithMetadata(localLyrics as any);
+            } else {
+              // It's a string (LRC)
+              parsed = parseLyrics(localLyrics);
+            }
+
             updateSongInQueue(songId, {
               lyrics: parsed,
               needsLyricsMatch: false,
@@ -374,9 +383,9 @@ export const usePlayer = ({
               lyrics: mergeLyricsWithMetadata(raw),
               needsLyricsMatch: false,
             });
-            // Auto-save to local
-            if (currentSong.fileUrl && raw.lrc) {
-              saveLocalLyrics(currentSong.fileUrl, raw.lrc);
+            // Auto-save to local (Save full JSON object to preserve YRC)
+            if (currentSong.fileUrl) {
+              saveLocalLyrics(currentSong.fileUrl, raw);
             }
             markMatchSuccess();
           } else {
@@ -389,14 +398,22 @@ export const usePlayer = ({
           );
           if (cancelled) return;
           if (result) {
-            updateSongInQueue(songId, {
+
+            // Enrich metadata if missing
+            const updates: Partial<Song> = {
               lyrics: mergeLyricsWithMetadata(result),
               needsLyricsMatch: false,
-              coverUrl: currentSong.coverUrl || result.coverUrl, // Use cloud cover if local is missing
-            });
-            // Auto-save to local
-            if (currentSong.fileUrl && result.lrc) {
-              saveLocalLyrics(currentSong.fileUrl, result.lrc);
+            };
+
+            if (!currentSong.coverUrl && result.coverUrl) {
+              updates.coverUrl = result.coverUrl;
+            }
+
+            updateSongInQueue(songId, updates);
+
+            // Auto-save to local (Save full JSON object)
+            if (currentSong.fileUrl) {
+              saveLocalLyrics(currentSong.fileUrl, result);
             }
             markMatchSuccess();
           } else {

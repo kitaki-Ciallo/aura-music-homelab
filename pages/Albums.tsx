@@ -5,7 +5,7 @@ import { Song, PlayState } from '../types';
 import { Play, Pause } from 'lucide-react';
 
 const Albums: React.FC = () => {
-    const { queue, library, playState, currentSong, replaceAll, playIndex } = usePlayerContext();
+    const { queue, library, playState, currentSong, replaceAll, playIndex, togglePlay } = usePlayerContext();
 
     const albums = useMemo(() => {
         const map = new Map<string, Song[]>();
@@ -45,7 +45,11 @@ const Albums: React.FC = () => {
     };
 
     const handleSongClick = (song: Song, index: number) => {
-        replaceAll(displayedSongs, index);
+        if (currentSong?.id === song.id) {
+            togglePlay();
+        } else {
+            replaceAll(displayedSongs, index);
+        }
     };
 
     const getAlbumCover = (songs: Song[]) => {
@@ -67,7 +71,7 @@ const Albums: React.FC = () => {
         };
 
         return (
-            <div className="p-8 pb-32 h-full overflow-y-auto custom-scrollbar text-white animate-fade-in">
+            <div className="p-8 pb-32 text-white animate-fade-in">
                 <button
                     onClick={handleBack}
                     className="mb-6 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm font-medium flex items-center gap-2"
@@ -173,7 +177,7 @@ const Albums: React.FC = () => {
 
     // Grid View
     return (
-        <div className="p-8 text-white pb-32 h-full overflow-y-auto custom-scrollbar">
+        <div className="p-8 text-white pb-32">
             <h1 className="text-3xl font-bold mb-8">Albums</h1>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                 {albums.map(([album, songs]) => {

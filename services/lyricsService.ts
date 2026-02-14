@@ -17,8 +17,11 @@ export const fetchLocalLyrics = async (fileUrl: string) => {
     const relativePath = fileUrl.replace(/^\/music\//, '');
     const response = await fetch(`/api/lyrics?file=${encodeURIComponent(relativePath)}`);
     if (response.ok) {
-      const text = await response.text();
-      return text;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+      }
+      return await response.text();
     }
     return null;
   } catch (error) {
@@ -27,7 +30,7 @@ export const fetchLocalLyrics = async (fileUrl: string) => {
   }
 }
 
-export const saveLocalLyrics = async (fileUrl: string, lyrics: string) => {
+export const saveLocalLyrics = async (fileUrl: string, lyrics: string | object) => {
   try {
     const relativePath = fileUrl.replace(/^\/music\//, '');
     await fetch('/api/lyrics', {

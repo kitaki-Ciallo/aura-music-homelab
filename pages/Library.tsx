@@ -24,12 +24,45 @@ const Library: React.FC = () => {
 
 
 
-    return (
-        <div className="p-8 pb-32">
-            <div className="flex items-end gap-6 mb-8">
+
+    const coverArt = React.useMemo(() => {
+        const withCovers = songs.filter(s => s.coverUrl);
+        if (withCovers.length < 4) return withCovers.slice(0, 4); // Take what we have
+        // Simple random selection
+        const shuffled = [...withCovers].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 4);
+    }, [songs]); // Recalculate only if library changes
+
+    const renderCover = () => {
+        if (coverArt.length === 0) {
+            return (
                 <div className="w-40 h-40 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg shadow-xl flex items-center justify-center text-white">
                     <span className="text-4xl font-bold">All</span>
                 </div>
+            );
+        }
+
+        if (coverArt.length < 4) {
+            // If we have at least one but less than 4, just show the first one full size
+            // Or maybe a grid with repeats? Let's stick to full size for < 4 for simplicity like Playlist
+            return (
+                <img src={coverArt[0].coverUrl} alt="All Songs" className="w-40 h-40 rounded-lg shadow-xl object-cover" />
+            );
+        }
+
+        return (
+            <div className="w-40 h-40 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
+                {coverArt.map((song, i) => (
+                    <img key={i} src={song.coverUrl} alt="" className="w-full h-full object-cover" />
+                ))}
+            </div>
+        );
+    };
+
+    return (
+        <div className="p-8 pb-32">
+            <div className="flex items-end gap-6 mb-8">
+                {renderCover()}
                 <div>
                     <h4 className="text-sm font-bold uppercase tracking-wider text-pink-500 mb-1">Playlist</h4>
                     <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">All Songs</h1>
@@ -104,5 +137,6 @@ const Library: React.FC = () => {
         </div>
     );
 };
+
 
 export default Library;

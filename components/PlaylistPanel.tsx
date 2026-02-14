@@ -102,21 +102,23 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     });
 
     // Scroll to current song when opening
-    useEffect(() => {
+    React.useLayoutEffect(() => {
         if (isOpen && listRef.current) {
+            // Force a layout check
+            const containerHeight = listRef.current.clientHeight;
+
             const index = queue.findIndex(s => s.id === currentSongId);
+            let targetScroll = 0;
+
             if (index !== -1) {
-                const containerHeight = listRef.current.clientHeight;
-                const targetScroll = (index * ITEM_HEIGHT) - (containerHeight / 2) + (ITEM_HEIGHT / 2);
-                listRef.current.scrollTop = targetScroll;
-                setScrollTop(targetScroll);
-            } else {
-                listRef.current.scrollTop = 0;
-                setScrollTop(0);
+                targetScroll = (index * ITEM_HEIGHT) - (containerHeight / 2) + (ITEM_HEIGHT / 2);
+                targetScroll = Math.max(0, targetScroll); // Ensure not negative
             }
+
+            listRef.current.scrollTop = targetScroll;
+            setScrollTop(targetScroll);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]);
+    }, [isOpen, currentSongId, queue]); // Add queue and currentSongId dependencies to ensure update when data changes
 
     // Close on click outside
     useEffect(() => {
@@ -154,7 +156,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
 
     const handleDelete = () => {
         onRemove(Array.from(selectedIds));
-        setSelectedIds(new Set());
+        setSelectedIds(newSet);
         setIsEditing(false);
     };
 
@@ -173,7 +175,9 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
 
     const { virtualItems, totalHeight } = useMemo(() => {
         const totalHeight = queue.length * ITEM_HEIGHT;
-        const containerHeight = 800; // Approx max height + buffer
+        // Use a larger viewport estimation to prevent blank areas on large screens
+        // or during initial render where items might not be filled yet.
+        const containerHeight = 1200;
 
         let startIndex = Math.floor(scrollTop / ITEM_HEIGHT);
         let endIndex = Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT);
@@ -201,7 +205,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     const defaultClasses = `
         absolute bottom-24 -right-8 z-50
         w-[340px] 
-        bg-black/10 backdrop-blur-[100px] saturate-150
+        bg-white/10 backdrop-blur-[100px] saturate-150
         rounded-[32px] 
         shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
         border border-white/5

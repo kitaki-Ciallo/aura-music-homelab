@@ -100,15 +100,27 @@ const Playlist: React.FC = () => {
                             onClick={() => handlePlay(song, i)}
                             className={`grid grid-cols-[auto_1fr_1fr_auto] gap-4 px-4 py-3 rounded-md hover:bg-white/10 group cursor-pointer transition-colors ${isCurrent ? 'bg-white/10' : ''}`}
                         >
-                            <div className="w-8 flex items-center justify-center text-sm text-white/40 group-hover:text-white">
-                                {isCurrent ? (
-                                    isPlaying ? <span className="animate-pulse text-pink-500">♫</span> : <span className="text-pink-500">{i + 1}</span>
-                                ) : (
-                                    <span className="group-hover:hidden">{i + 1}</span>
+                            <div className="w-8 flex items-center justify-center text-sm text-white/40 group-hover:text-white relative">
+                                {/* Always hide the number on hover to make room for controls */}
+                                <span className={`group-hover:hidden ${isCurrent ? 'hidden' : 'block'}`}>
+                                    {i + 1}
+                                </span>
+
+                                {/* Current song status (not hovered) */}
+                                {isCurrent && (
+                                    <span className="group-hover:hidden">
+                                        {isPlaying ? <span className="animate-pulse text-pink-500">♫</span> : <span className="text-pink-500">{i + 1}</span>}
+                                    </span>
                                 )}
-                                <Play size={12} className={`hidden group-hover:block ${isCurrent ? 'hidden' : ''}`} fill="currentColor" />
-                                {isCurrent && !isPlaying && <Play size={12} className="hidden group-hover:block" fill="currentColor" />}
-                                {isPlaying && <Pause size={12} className="hidden group-hover:block" fill="currentColor" />}
+
+                                {/* Hover controls */}
+                                <div className="hidden group-hover:flex items-center justify-center">
+                                    {isCurrent && isPlaying ? (
+                                        <Pause size={12} fill="currentColor" />
+                                    ) : (
+                                        <Play size={12} fill="currentColor" />
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-3 overflow-hidden">
