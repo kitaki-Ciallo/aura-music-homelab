@@ -25,3 +25,6 @@ dist-ssr
 
 tests/*
 bun.lock
+
+# User Music Files
+music/

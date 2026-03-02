@@ -201,7 +201,16 @@ router.get('/songs', async (req, res) => {
 
         }));
 
-        res.json(songs);
+        // Deduplicate songs by ID (title + artist) to prevent duplicates from playlist folders
+        const uniqueSongsMap = new Map();
+        songs.forEach(song => {
+            if (!uniqueSongsMap.has(song.id)) {
+                uniqueSongsMap.set(song.id, song);
+            }
+        });
+        const uniqueSongs = Array.from(uniqueSongsMap.values());
+
+        res.json(uniqueSongs);
     } catch (error) {
         console.error('Error fetching songs:', error);
         res.status(500).json({ error: 'Failed to fetch songs' });

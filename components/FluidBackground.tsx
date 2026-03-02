@@ -148,20 +148,31 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
     targetColorsRef.current = normalizedColors;
   }, [normalizedColors]);
 
-  // Hex to RGB helper
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
+  // Parse color (hex or rgb string) to RGB object
+  const parseColor = (color: string) => {
+    if (!color) return { r: 0, g: 0, b: 0 };
+    // Check for rgb string
+    const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (rgbMatch) {
+      return {
+        r: parseInt(rgbMatch[1], 10),
+        g: parseInt(rgbMatch[2], 10),
+        b: parseInt(rgbMatch[3], 10)
+      };
+    }
+    // Check for hex string
+    const hexResult = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+    return hexResult ? {
+      r: parseInt(hexResult[1], 16),
+      g: parseInt(hexResult[2], 16),
+      b: parseInt(hexResult[3], 16)
     } : { r: 0, g: 0, b: 0 };
-  }
+  };
 
   // Linear interpolation
   const lerp = (start: number, end: number, t: number) => {
     return start * (1 - t) + end * t;
-  }
+  };
 
   const renderGradientFrame = useCallback((ctx: CanvasRenderingContext2D) => {
     const width = ctx.canvas.width;
@@ -179,8 +190,8 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
       const cHex = current[i] || current[current.length - 1];
       const tHex = target[i] || target[target.length - 1];
 
-      const c = hexToRgb(cHex);
-      const t = hexToRgb(tHex);
+      const c = parseColor(cHex);
+      const t = parseColor(tHex);
 
       const r = lerp(c.r, t.r, transitionSpeed);
       const g = lerp(c.g, t.g, transitionSpeed);
