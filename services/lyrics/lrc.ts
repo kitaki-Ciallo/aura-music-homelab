@@ -44,7 +44,7 @@ const tokenizeLine = (line: string): LrcToken[] => {
   let cursor = 0;
 
   // Extract time tags: [mm:ss.xx]
-  const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+  const timeRegex = /\[(\d{2}):(\d{2})[.:](\d{2,3})\]/g;
   let match: RegExpExecArray | null;
 
   while ((match = timeRegex.exec(trimmed)) !== null) {
@@ -74,7 +74,7 @@ const tokenizeLine = (line: string): LrcToken[] => {
   }
 
   // Parse word timing tags: <mm:ss.xx>word
-  const wordRegex = /<(\d{2}):(\d{2})\.(\d{2,3})>([^<]*)/g;
+  const wordRegex = /<(\d{2}):(\d{2})[.:](\d{2,3})>([^<]*)/g;
   const wordMatches = [...content.matchAll(wordRegex)];
 
   if (wordMatches.length > 0) {
