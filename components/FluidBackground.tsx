@@ -4,10 +4,10 @@ import { UIBackgroundRender } from "./background/renderer/UIBackgroundRender";
 import { WebWorkerBackgroundRender } from "./background/renderer/WebWorkerBackgroundRender";
 
 const desktopGradientDefaults = [
-  "rgb(60, 20, 80)",
-  "rgb(100, 40, 60)",
-  "rgb(20, 20, 40)",
-  "rgb(40, 40, 90)",
+  "#ffffff",
+  "#ff00ff",
+  "#f5f5f5",
+  "#e050e0",
 ];
 
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
@@ -100,8 +100,9 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
         lastPausedTimeRef.current = 0;
       }
 
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, width, height);
+      // ctx.fillStyle = "#000";
+      // ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
       if (layersRef.current.length === 0) {
         ctx.fillStyle = "#222";
@@ -138,17 +139,74 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
     [],
   );
 
+  // Color interpolation state
+  const currentColorsRef = useRef<string[]>(normalizedColors);
+  const targetColorsRef = useRef<string[]>(normalizedColors);
+  const transitionSpeed = 0.02; // Adjust for speed
+
+  useEffect(() => {
+    targetColorsRef.current = normalizedColors;
+  }, [normalizedColors]);
+
+  // Parse color (hex or rgb string) to RGB object
+  const parseColor = (color: string) => {
+    if (!color) return { r: 0, g: 0, b: 0 };
+    // Check for rgb string
+    const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (rgbMatch) {
+      return {
+        r: parseInt(rgbMatch[1], 10),
+        g: parseInt(rgbMatch[2], 10),
+        b: parseInt(rgbMatch[3], 10)
+      };
+    }
+    // Check for hex string
+    const hexResult = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+    return hexResult ? {
+      r: parseInt(hexResult[1], 16),
+      g: parseInt(hexResult[2], 16),
+      b: parseInt(hexResult[3], 16)
+    } : { r: 0, g: 0, b: 0 };
+  };
+
+  // Linear interpolation
+  const lerp = (start: number, end: number, t: number) => {
+    return start * (1 - t) + end * t;
+  };
+
   const renderGradientFrame = useCallback((ctx: CanvasRenderingContext2D) => {
     const width = ctx.canvas.width;
     const height = ctx.canvas.height;
-    const palette =
-      colorsRef.current && colorsRef.current.length > 0
-        ? colorsRef.current
-        : desktopGradientDefaults;
+
+    // Interpolate colors
+    const current = currentColorsRef.current;
+    const target = targetColorsRef.current;
+
+    // Ensure lengths match (pad with last color if needed)
+    const maxLength = Math.max(current.length, target.length);
+    const nextColors = [];
+
+    for (let i = 0; i < maxLength; i++) {
+      const cHex = current[i] || current[current.length - 1];
+      const tHex = target[i] || target[target.length - 1];
+
+      const c = parseColor(cHex);
+      const t = parseColor(tHex);
+
+      const r = lerp(c.r, t.r, transitionSpeed);
+      const g = lerp(c.g, t.g, transitionSpeed);
+      const b = lerp(c.b, t.b, transitionSpeed);
+
+      nextColors.push(`rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`);
+    }
+
+    currentColorsRef.current = nextColors;
+
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    palette.forEach((color, index) => {
-      gradient.addColorStop(index / Math.max(1, palette.length - 1), color);
+    nextColors.forEach((color, index) => {
+      gradient.addColorStop(index / Math.max(1, nextColors.length - 1), color);
     });
+
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
   }, []);
@@ -245,7 +303,7 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({
       <canvas
         ref={canvasRef}
         key={canvasKey}
-        className="fixed inset-0 w-full h-full bg-black block"
+        className="fixed inset-0 w-full h-full block"
         style={{ touchAction: "none" }}
       />
       <div

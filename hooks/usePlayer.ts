@@ -12,6 +12,9 @@ import { parseLyrics } from "../services/lyrics";
 import {
   fetchLyricsById,
   searchAndMatchLyrics,
+  mergeLyricsWithMetadata,
+  fetchLocalLyrics,
+  saveLocalLyrics,
 } from "../services/lyricsService";
 import { audioResourceCache } from "../services/cache";
 
@@ -51,11 +54,26 @@ export const usePlayer = ({
   setQueue,
   setOriginalQueue,
 }: UsePlayerParams) => {
-  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('aura-current-index');
+      console.log("[usePlayer] Initializing currentIndex from local storage:", saved);
+      return saved ? parseInt(saved, 10) : -1;
+    } catch { return -1; }
+  });
   const [playState, setPlayState] = useState<PlayState>(PlayState.PAUSED);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState<number>(() => {
+    try {
+      return parseFloat(localStorage.getItem('aura-current-time') || '0');
+    } catch { return 0; }
+  });
   const [duration, setDuration] = useState(0);
-  const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.LOOP_ALL);
+  const [playMode, setPlayMode] = useState<PlayMode>(() => {
+    try {
+      const saved = localStorage.getItem('aura-play-mode');
+      return saved !== null ? (parseInt(saved, 10) as PlayMode) : PlayMode.LOOP_ALL;
+    } catch { return PlayMode.LOOP_ALL; }
+  });
   const [matchStatus, setMatchStatus] = useState<MatchStatus>("idle");
   const audioRef = useRef<HTMLAudioElement>(null);
   const isSeekingRef = useRef(false);
@@ -170,22 +188,35 @@ export const usePlayer = ({
     [],
   );
 
+  const isInitialLoadRef = useRef(true);
+
   const handleTimeUpdate = useCallback(() => {
     if (!audioRef.current || isSeekingRef.current) return;
     const value = audioRef.current.currentTime;
     setCurrentTime(Number.isFinite(value) ? value : 0);
+    // Persist current time (throttle this conceptually, but localStorage is fast enough for 4 times/sec)
+    localStorage.setItem('aura-current-time', value.toString());
   }, []);
 
   const handleLoadedMetadata = useCallback(() => {
     if (!audioRef.current) return;
     const value = audioRef.current.duration;
     setDuration(Number.isFinite(value) ? value : 0);
+
+    // Resume saved time on initial load
+    if (isInitialLoadRef.current && currentTime > 0) {
+      if (currentTime < value) {
+        audioRef.current.currentTime = currentTime;
+      }
+      isInitialLoadRef.current = false;
+    }
+
     if (playState === PlayState.PLAYING) {
       audioRef.current
         .play()
         .catch((err) => console.error("Auto-play failed", err));
     }
-  }, [playState]);
+  }, [playState, currentTime]);
 
   const playNext = useCallback(() => {
     if (queue.length === 0) return;
@@ -266,12 +297,12 @@ export const usePlayer = ({
   );
 
   const handlePlaylistAddition = useCallback(
-    (added: Song[], wasEmpty: boolean) => {
+    (added: Song[], wasEmpty: boolean, autoPlay: boolean = true) => {
       if (added.length === 0) return;
       setMatchStatus("idle");
       if (wasEmpty || currentIndex === -1) {
         setCurrentIndex(0);
-        setPlayState(PlayState.PLAYING);
+        setPlayState(autoPlay ? PlayState.PLAYING : PlayState.PAUSED);
       }
       if (playMode === PlayMode.SHUFFLE) {
         reorderForShuffle();
@@ -280,21 +311,7 @@ export const usePlayer = ({
     [currentIndex, playMode, reorderForShuffle],
   );
 
-  const mergeLyricsWithMetadata = useCallback(
-    (result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[] }) => {
-      const parsed = parseLyrics(result.lrc, result.tLrc, {
-        yrcContent: result.yrc,
-      });
-      const metadataCount = result.metadata.length;
-      const metadataLines = result.metadata.map((text, idx) => ({
-        time: -0.1 * (metadataCount - idx),
-        text,
-        isMetadata: true,
-      }));
-      return [...metadataLines, ...parsed].sort((a, b) => a.time - b.time);
-    },
-    [],
-  );
+
 
   const loadLyricsFile = useCallback(
     (file?: File) => {
@@ -324,7 +341,8 @@ export const usePlayer = ({
     const songId = currentSong.id;
     const songTitle = currentSong.title;
     const songArtist = currentSong.artist;
-    const needsLyricsMatch = currentSong.needsLyricsMatch;
+    // Default to true if not explicitly set to false (i.e. undefined)
+    const needsLyricsMatch = currentSong.needsLyricsMatch ?? true;
     const existingLyrics = currentSong.lyrics ?? [];
     const isNeteaseSong = currentSong.isNetease;
     const songNeteaseId = currentSong.neteaseId;
@@ -357,6 +375,31 @@ export const usePlayer = ({
     const fetchLyrics = async () => {
       setMatchStatus("matching");
       try {
+        // Step 1: Check local lyrics first
+        if (currentSong.fileUrl) {
+          const localLyrics = await fetchLocalLyrics(currentSong.fileUrl);
+          if (cancelled) return;
+
+          if (localLyrics) {
+            // Found local lyrics
+            let parsed;
+            if (typeof localLyrics === 'object') {
+              // It's JSON (YRC/LRC combined)
+              parsed = mergeLyricsWithMetadata(localLyrics as any);
+            } else {
+              // It's a string (LRC)
+              parsed = parseLyrics(localLyrics);
+            }
+
+            updateSongInQueue(songId, {
+              lyrics: parsed,
+              needsLyricsMatch: false,
+            });
+            markMatchSuccess();
+            return;
+          }
+        }
+
         if (isNeteaseSong && songNeteaseId) {
           const raw = await withTimeout(
             fetchLyricsById(songNeteaseId),
@@ -368,6 +411,10 @@ export const usePlayer = ({
               lyrics: mergeLyricsWithMetadata(raw),
               needsLyricsMatch: false,
             });
+            // Auto-save to local (Save full JSON object to preserve YRC)
+            if (currentSong.fileUrl) {
+              saveLocalLyrics(currentSong.fileUrl, raw);
+            }
             markMatchSuccess();
           } else {
             markMatchFailed();
@@ -379,10 +426,23 @@ export const usePlayer = ({
           );
           if (cancelled) return;
           if (result) {
-            updateSongInQueue(songId, {
+
+            // Enrich metadata if missing
+            const updates: Partial<Song> = {
               lyrics: mergeLyricsWithMetadata(result),
               needsLyricsMatch: false,
-            });
+            };
+
+            if (!currentSong.coverUrl && result.coverUrl) {
+              updates.coverUrl = result.coverUrl;
+            }
+
+            updateSongInQueue(songId, updates);
+
+            // Auto-save to local (Save full JSON object)
+            if (currentSong.fileUrl) {
+              saveLocalLyrics(currentSong.fileUrl, result);
+            }
             markMatchSuccess();
           } else {
             markMatchFailed();
@@ -454,7 +514,6 @@ export const usePlayer = ({
   useEffect(() => {
     if (
       !currentSong ||
-      !currentSong.isNetease ||
       !currentSong.coverUrl ||
       (currentSong.colors && currentSong.colors.length > 0)
     ) {
@@ -483,15 +542,32 @@ export const usePlayer = ({
       return;
     }
 
+    if (currentIndex === -1) return; // Wait for initialization
+
     if (currentIndex >= queue.length || !queue[currentIndex]) {
-      const nextIndex = Math.max(0, Math.min(queue.length - 1, currentIndex));
-      setCurrentIndex(nextIndex);
+      // ONLY correct if the queue is actually populated. 
+      // If queue is empty, set index back to -1 so we don't save '0' into storage wrongly.
+      if (queue.length > 0) {
+        const nextIndex = Math.max(0, Math.min(queue.length - 1, currentIndex));
+        setCurrentIndex(nextIndex);
+      } else {
+        setCurrentIndex(-1);
+      }
       setMatchStatus("idle");
     }
   }, [queue, currentIndex]);
 
-  const [speed, setSpeed] = useState(1);
-  const [preservesPitch, setPreservesPitch] = useState(true);
+  const [speed, setSpeed] = useState<number>(() => {
+    try {
+      return parseFloat(localStorage.getItem('aura-speed') || '1');
+    } catch { return 1; }
+  });
+  const [preservesPitch, setPreservesPitch] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('aura-pitch');
+      return saved ? saved === 'true' : true;
+    } catch { return true; }
+  });
   const [resolvedAudioSrc, setResolvedAudioSrc] = useState<string | null>(null);
   const [isBuffering, setIsBuffering] = useState(false);
   const [bufferProgress, setBufferProgress] = useState(0);
@@ -642,6 +718,25 @@ export const usePlayer = ({
       releaseObjectUrl();
     };
   }, [currentSong?.fileUrl]);
+
+  // --- Persistence Effects ---
+  useEffect(() => {
+    if (currentIndex !== -1) {
+      localStorage.setItem('aura-current-index', currentIndex.toString());
+    }
+  }, [currentIndex]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-play-mode', playMode.toString());
+  }, [playMode]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-speed', speed.toString());
+  }, [speed]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-pitch', preservesPitch.toString());
+  }, [preservesPitch]);
 
   return {
     audioRef,
