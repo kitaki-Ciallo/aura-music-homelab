@@ -10,24 +10,43 @@ import { useNavigate } from 'react-router-dom';
 const Playlist: React.FC = () => {
     const { name } = useParams<{ name: string }>();
     const [songs, setSongs] = useState<Song[]>([]);
-    const { playIndex, currentSong, playState, togglePlay, replaceAll, queue } = usePlayerContext();
+    const { playIndex, currentSong, playState, togglePlay, replaceAll, queue, library } = usePlayerContext();
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!name) return;
-        setLoading(true);
-        fetch(`/api/songs?playlist=${encodeURIComponent(name)}`)
-            .then(res => res.json())
-            .then(data => {
-                setSongs(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to fetch songs", err);
-                setLoading(false);
-            });
-    }, [name]);
+        if (!name || !library || library.length === 0) return;
+
+        const playlistSongs = library.filter(song => {
+            const fileUrl = song.fileUrl;
+            let decodedName = name;
+            try { decodedName = decodeURIComponent(name); } catch (e) { }
+
+            let decodedUrl = fileUrl;
+            try { decodedUrl = decodeURIComponent(fileUrl); } catch (e) { }
+
+            // Safe robust matching: 
+            // 1. fileUrl includes the exact decoded directory name wrapped in slashes
+            // 2. fileUrl includes the URI-encoded name
+            // 3. Fallback: fileUrl just includes the name somewhere
+            if (fileUrl.includes(`/${decodedName}/`) || fileUrl.includes(`/${name}/`)) {
+                return true;
+            }
+            if (decodedUrl.includes(`/${decodedName}/`) || decodedUrl.includes(`/${name}/`)) {
+                return true;
+            }
+
+            // Last resort fallback (case-insensitive substring)
+            if (fileUrl.toLowerCase().includes(decodedName.toLowerCase())) {
+                return true;
+            }
+
+            return false;
+        });
+
+        setSongs(playlistSongs);
+        setLoading(false);
+    }, [name, library]);
 
     const handlePlay = (song: Song, index: number) => {
         // If the current song is the one clicked, just toggle play

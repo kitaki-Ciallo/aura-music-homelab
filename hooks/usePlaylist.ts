@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Song } from "../types";
 import {
   extractColors,
@@ -55,8 +55,41 @@ export interface ImportResult {
 }
 
 export const usePlaylist = () => {
-  const [queue, setQueue] = useState<Song[]>([]);
-  const [originalQueue, setOriginalQueue] = useState<Song[]>([]);
+  const [queue, setQueue] = useState<Song[]>(() => {
+    try {
+      const saved = localStorage.getItem('aura-queue');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { console.warn("Failed to load queue from storage"); }
+    return [];
+  });
+
+  const [originalQueue, setOriginalQueue] = useState<Song[]>(() => {
+    try {
+      const saved = localStorage.getItem('aura-original-queue');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) { console.warn("Failed to load original queue from storage"); }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      const savableQueue = queue.filter(s => !s.fileUrl || !s.fileUrl.startsWith('blob:'));
+      localStorage.setItem('aura-queue', JSON.stringify(savableQueue));
+    } catch (e) { console.warn("Failed to serialize queue", e); }
+  }, [queue]);
+
+  useEffect(() => {
+    try {
+      const savableOriginal = originalQueue.filter(s => !s.fileUrl || !s.fileUrl.startsWith('blob:'));
+      localStorage.setItem('aura-original-queue', JSON.stringify(savableOriginal));
+    } catch (e) { console.warn("Failed to serialize original queue", e); }
+  }, [originalQueue]);
 
   const updateSongInQueue = useCallback(
     (id: string, updates: Partial<Song>) => {
@@ -139,6 +172,7 @@ export const usePlaylist = () => {
         const basename = file.name.replace(/\.[^/.]+$/, "");
         let title = basename;
         let artist = "Unknown Artist";
+        let album = "Unknown Album";
         let coverUrl: string | undefined;
         let colors: string[] | undefined;
         let lyrics: { time: number; text: string }[] = [];
@@ -153,7 +187,7 @@ export const usePlaylist = () => {
           const metadata = await parseAudioMetadata(file);
           if (metadata.title) title = metadata.title;
           if (metadata.artist) artist = metadata.artist;
-          let album = metadata.album || "Unknown Album";
+          if (metadata.album) album = metadata.album;
 
           // Fallback: Parsing from filename "Artist - Title" if metadata missing
           if (artist === "Unknown Artist" && nameParts.length > 1) {

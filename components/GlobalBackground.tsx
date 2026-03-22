@@ -4,13 +4,11 @@ import FluidBackground from './FluidBackground';
 import { PlayState } from '../types';
 
 const GlobalBackground: React.FC = () => {
-    const { currentSong, playState } = usePlayerContext();
+    const { currentSong, playState, theme, showFullPlayer } = usePlayerContext();
 
     // Persistent color state to prevent flashing on song change
-    // Initialize with current song colors or undefined (which falls back to defaults in FluidBackground)
     const [displayColors, setDisplayColors] = React.useState<string[] | undefined>(currentSong?.colors);
 
-    // Update colors only when we have valid new ones
     React.useEffect(() => {
         if (currentSong?.colors && currentSong.colors.length > 0) {
             setDisplayColors(currentSong.colors);
@@ -18,15 +16,17 @@ const GlobalBackground: React.FC = () => {
     }, [currentSong?.colors]);
 
     return (
-        <div className="fixed inset-0 z-0 pointer-events-none">
-            <FluidBackground
-                colors={displayColors}
-                coverUrl={currentSong?.coverUrl}
-                isPlaying={true} // Always render background, even if paused
-                isMobileLayout={false} // Use desktop/default rendering
-            />
-            {/* Overlay to ensure text readability */}
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-[20px]" />
+        <div className="fixed inset-0 z-0 pointer-events-none bg-black transition-colors duration-1000">
+            <div className={`absolute inset-0 transition-opacity duration-1000 ${theme === 'fluid' ? 'opacity-100' : 'opacity-0'}`}>
+                <FluidBackground
+                    colors={displayColors}
+                    coverUrl={currentSong?.coverUrl}
+                    isPlaying={theme === 'fluid'}
+                    isMobileLayout={false}
+                />
+                {/* Overlay for text readability - hidden when FullPlayer is open so fluid bg shows cleanly */}
+                <div className={`absolute inset-0 bg-black/30 backdrop-blur-[20px] transition-opacity duration-500 ${showFullPlayer && theme === 'fluid' ? 'opacity-0' : 'opacity-100'}`} />
+            </div>
         </div>
     );
 };

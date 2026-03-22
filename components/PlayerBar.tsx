@@ -18,6 +18,7 @@ const PlayerBar: React.FC = () => {
         volume,
         setVolume,
         playMode,
+        toggleMode,
         showFullPlayer,
         setShowFullPlayer,
         queue,
@@ -70,19 +71,19 @@ const PlayerBar: React.FC = () => {
                 <div className="flex items-center gap-6">
                     {/* Play Mode Toggle */}
                     <button
-                        onClick={usePlayerContext().toggleMode}
-                        className={`text-white/70 hover:text-white transition-colors ${playMode !== PlayMode.LOOP_ALL ? 'text-purple-400 opacity-100' : ''}`}
+                        onClick={toggleMode}
+                        className={`text-white/70 hover:text-white transition-colors flex items-center justify-center relative w-8 h-8`}
                         title={playMode === PlayMode.LOOP_ONE ? "Loop One" : playMode === PlayMode.SHUFFLE ? "Shuffle" : "Loop All"}
                     >
                         {playMode === PlayMode.LOOP_ONE ? (
-                            <Repeat size={18} className="text-purple-400" />
+                            <Repeat size={18} />
                         ) : playMode === PlayMode.SHUFFLE ? (
-                            <Shuffle size={18} className="text-purple-400" />
+                            <Shuffle size={18} />
                         ) : (
                             <Repeat size={18} />
                         )}
                         {playMode === PlayMode.LOOP_ONE && (
-                            <span className="absolute text-[8px] font-bold -mt-2 ml-2 text-purple-400">1</span>
+                            <span className="absolute text-[8px] font-bold mt-[1px] ml-[2px]">1</span>
                         )}
                     </button>
 

@@ -53,6 +53,8 @@ const MainLayout: React.FC = () => {
     const {
         showPlaylist,
         setShowPlaylist,
+        showFullPlayer,
+        theme,
         queue,
         currentSong,
         playIndex,
@@ -70,7 +72,7 @@ const MainLayout: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-screen text-white overflow-hidden font-sans relative z-10">
+        <div className={`flex flex-col h-screen text-white overflow-hidden font-sans relative z-10 transition-opacity duration-[400ms] ${showFullPlayer && theme === 'fluid' ? 'opacity-0' : 'opacity-100'}`}>
             <KeyboardShortcuts />
             <div className="flex-1 flex min-h-0">
                 <Sidebar playlists={playlists} />
@@ -83,8 +85,8 @@ const MainLayout: React.FC = () => {
 
             {/* Playlist Sidebar Overlay (Global) */}
             {showPlaylist && (
-                <div className="absolute inset-x-0 top-0 bottom-24 z-[60] bg-white/10 backdrop-blur-sm flex justify-end animate-in fade-in duration-300">
-                    <div className="w-full max-w-sm h-full bg-white/10 backdrop-blur-3xl border-l border-white/10 shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300">
+                <div className={`absolute inset-x-0 top-0 bottom-24 z-[60] flex justify-end animate-in fade-in duration-300 ${theme === 'fluid' ? 'bg-white/10 backdrop-blur-sm' : 'bg-black/40'}`}>
+                    <div className={`w-full max-w-sm h-full border-l shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300 ${theme === 'fluid' ? 'bg-white/10 backdrop-blur-3xl border-white/10' : 'bg-black/95 border-white/5'}`}>
                         <div className="p-4 flex items-center justify-between border-b border-white/10">
                             <h2 className="text-xl font-bold">Queue</h2>
                             <button

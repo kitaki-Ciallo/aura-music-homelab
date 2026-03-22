@@ -1,19 +1,45 @@
 
 import React, { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { Home, Music, Disc, Mic2, ListMusic, PlusCircle, Search } from 'lucide-react';
+import { usePlayerContext } from '../context/PlayerContext';
 
 interface SidebarProps {
     playlists: string[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ playlists }) => {
+    const { theme, setTheme } = usePlayerContext();
+
+    const cycleTheme = () => {
+        const nextTheme = theme === 'fluid' ? 'light' : theme === 'light' ? 'dark' : 'fluid';
+
+        if (!document.startViewTransition) {
+            setTheme(nextTheme);
+            return;
+        }
+
+        document.startViewTransition(() => {
+            flushSync(() => {
+                setTheme(nextTheme);
+            });
+        });
+    };
+
     return (
-        <div className="w-64 h-full bg-white/10 backdrop-blur-md border-r border-white/5 flex flex-col pt-6">
-            <div className="px-6 mb-8">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-pink-500 bg-clip-text text-transparent">
+        <div className="w-64 h-full bg-white/10 backdrop-blur-md border-r border-white/5 flex flex-col pt-6 transform-gpu isolate">
+            <div
+                className="px-6 mb-8 cursor-pointer select-none group"
+                onClick={cycleTheme}
+                title="Click to change theme"
+            >
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-pink-500 bg-clip-text text-transparent transition-transform group-active:scale-95 origin-left inline-block">
                     Aura Music
                 </h1>
+                <div className="text-[10px] text-white/30 uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Theme: {theme}
+                </div>
             </div>
 
             <nav className="flex-1 overflow-y-auto px-4 space-y-6">

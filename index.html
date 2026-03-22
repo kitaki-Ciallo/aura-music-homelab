@@ -17,10 +17,39 @@
     <style>
         body {
             font-family: "PingFang SC", "Inter", sans-serif;
-            background-color: #ffffff;
-            color: #000000;
+            background-color: #000000;
+            color: #ffffff;
             overflow: hidden;
             /* Prevent scroll on body, handle in app */
+        }
+
+        /* Smooth Theme Switch via View Transition API */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 0.8s;
+            animation-timing-function: ease-in-out;
+            mix-blend-mode: normal;
+        }
+
+        /* 
+         * Light Theme Implementation:
+         * Instead of aggressively rewriting hundreds of Tailwind component classes
+         * (e.g. text-white -> text-black), we invert the entire app. This correctly
+         * turns black into white and white into black. 
+         */
+        .theme-light {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        /* Revert images and videos back to normal color */
+        .theme-light img,
+        .theme-light video {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        /* Prevent Chromium rendering/flickering bugs when backdrop-blur mixes with body invert filter */
+        body:not(.theme-fluid) * {
+            backdrop-filter: none !important;
         }
 
         /* Custom Scrollbar for Lyrics */

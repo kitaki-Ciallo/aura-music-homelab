@@ -7,7 +7,8 @@ import Controls from "./Controls";
 import LyricsView from "./LyricsView";
 import MediaSessionController from "./MediaSessionController";
 import { usePlayerContext } from "../context/PlayerContext";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Sun, Moon, Droplets, Maximize, Minimize } from "lucide-react";
+import { flushSync } from "react-dom";
 import PlaylistPanel from "./PlaylistPanel";
 
 const FullPlayer: React.FC = () => {
@@ -35,13 +36,16 @@ const FullPlayer: React.FC = () => {
         removeSongs,
         matchStatus,
         showPlaylist,
-        setShowPlaylist
+        setShowPlaylist,
+        theme,
+        setTheme
     } = usePlayerContext();
 
     // Visual state
     const [showVisualizer, setShowVisualizer] = useState(true);
     const [activePanel, setActivePanel] = useState<"controls" | "lyrics">("controls");
     const [isMobileLayout, setIsMobileLayout] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
 
     // We lift these UI states here as they are specific to the full player view
     // showPlaylist is now in context
@@ -72,21 +76,88 @@ const FullPlayer: React.FC = () => {
         return () => query.removeEventListener("change", updateLayout);
     }, []);
 
-    // Close handling with animation
+    // Listen to fullscreen changes outside of react
+    useEffect(() => {
+        const onFullScreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+        document.addEventListener("fullscreenchange", onFullScreenChange);
+        return () => {
+            document.removeEventListener("fullscreenchange", onFullScreenChange);
+        };
+    }, []);
+
+    // Close handling - different behavior per theme
     const [isClosing, setIsClosing] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        if (showFullPlayer) {
+            setIsVisible(true);
+            setIsClosing(false);
+        }
+    }, [showFullPlayer]);
 
     const handleClose = () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(err => console.warn(err));
+        }
         setIsClosing(true);
-        setTimeout(() => {
+
+        if (theme === 'fluid') {
+            // Crossfade: immediately let MainLayout fade in, FullPlayer fades out
             setShowFullPlayer(false);
-            setIsClosing(false); // Reset for next time
-        }, 300);
+            setTimeout(() => {
+                setIsVisible(false);
+                setIsClosing(false);
+            }, 400);
+        } else {
+            // Slide down: wait for animation, then hide
+            setTimeout(() => {
+                setShowFullPlayer(false);
+                setIsVisible(false);
+                setIsClosing(false);
+            }, 300);
+        }
     };
 
-    if (!showFullPlayer) return null;
+    const cycleTheme = () => {
+        const nextTheme = theme === 'fluid' ? 'light' : theme === 'light' ? 'dark' : 'fluid';
+
+        if (!document.startViewTransition) {
+            setTheme(nextTheme);
+            return;
+        }
+
+        document.startViewTransition(() => {
+            flushSync(() => {
+                setTheme(nextTheme);
+            });
+        });
+    };
+
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
+
+    if (!isVisible) return null;
+
+    // Choose animation class based on theme
+    const getAnimClass = () => {
+        if (theme === 'fluid') {
+            return isClosing ? 'animate-fade-out' : 'animate-fade-in';
+        }
+        return isClosing ? 'animate-slide-down' : 'animate-slide-up';
+    };
 
     return (
-        <div className={`fixed inset-0 z-[100] flex flex-col ${isClosing ? 'animate-slide-down' : 'animate-slide-up'} bg-transparent`}>
+        <div className={`fixed inset-0 z-[100] flex flex-col ${getAnimClass()} ${theme === 'fluid' ? 'bg-transparent' : 'bg-black'}`}>
             {/* Background placeholder removed to allow GlobalBackground to show through until FluidBackground loads */}
 
             <style>{`
@@ -98,31 +169,57 @@ const FullPlayer: React.FC = () => {
                     from { transform: translateY(0); opacity: 1; }
                     to { transform: translateY(100%); opacity: 0; }
                 }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
                 .animate-slide-up {
                     animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
                 .animate-slide-down {
-                     animation: slideOutDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    animation: slideOutDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .animate-fade-in {
+                    animation: fadeIn 0.4s ease-out forwards;
+                }
+                .animate-fade-out {
+                    animation: fadeOut 0.4s ease-out forwards;
                 }
             `}</style>
 
-            {/* Close Button */}
-            <div className="absolute top-4 left-4 z-50">
+            {/* Top Action Buttons */}
+            <div className="absolute top-4 left-4 z-50 flex gap-4">
                 <button
                     onClick={handleClose}
                     className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors text-white"
+                    title="Close Full Player"
                 >
                     <ChevronDown size={24} />
                 </button>
+                <button
+                    onClick={cycleTheme}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors text-white"
+                    title="Change Theme"
+                >
+                    {theme === 'fluid' ? <Droplets size={24} /> : theme === 'light' ? <Sun size={24} /> : <Moon size={24} />}
+                </button>
             </div>
 
-            <FluidBackground
-                key={isMobileLayout ? "mobile" : "desktop"}
-                colors={displayColors}
-                coverUrl={currentSong?.coverUrl}
-                isPlaying={playState === PlayState.PLAYING}
-                isMobileLayout={isMobileLayout}
-            />
+            {/* Top Right Action Buttons */}
+            <div className="absolute top-4 right-4 z-50 flex gap-4">
+                <button
+                    onClick={toggleFullScreen}
+                    className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors text-white"
+                    title="Toggle Full Screen"
+                >
+                    {isFullScreen ? <Minimize size={24} /> : <Maximize size={24} />}
+                </button>
+            </div>
+
 
             {/* Global KeyboardShortcuts are mounted in MainLayout */}
 

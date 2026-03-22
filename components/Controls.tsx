@@ -21,6 +21,7 @@ import {
   QueueIcon,
 } from "./Icons";
 import { PlayMode } from "../types";
+import { usePlayerContext } from "../context/PlayerContext";
 
 interface ControlsProps {
   isPlaying: boolean;

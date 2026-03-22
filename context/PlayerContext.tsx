@@ -42,6 +42,10 @@ interface PlayerContextType {
     setShowFullPlayer: (show: boolean) => void;
     showPlaylist: boolean;
     setShowPlaylist: (show: boolean) => void;
+
+    // Theme State
+    theme: 'fluid' | 'dark' | 'light';
+    setTheme: (theme: 'fluid' | 'dark' | 'light') => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -56,9 +60,36 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setOriginalQueue: playlist.setOriginalQueue,
     });
 
-    const [volume, setVolume] = React.useState(1);
+    const [volume, setVolume] = React.useState<number>(() => {
+        try {
+            const saved = localStorage.getItem('aura-volume');
+            return saved !== null ? parseFloat(saved) : 1;
+        } catch { return 1; }
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem('aura-volume', volume.toString());
+    }, [volume]);
     const [showFullPlayer, setShowFullPlayer] = React.useState(false);
     const [showPlaylist, setShowPlaylist] = React.useState(false);
+
+    // Theme state
+    const [theme, setThemeState] = React.useState<'fluid' | 'dark' | 'light'>(() => {
+        return (localStorage.getItem('aura-theme') as 'fluid' | 'dark' | 'light') || 'fluid';
+    });
+
+    const setTheme = React.useCallback((newTheme: 'fluid' | 'dark' | 'light') => {
+        setThemeState(newTheme);
+        localStorage.setItem('aura-theme', newTheme);
+
+        document.body.classList.remove('theme-light', 'theme-dark', 'theme-fluid');
+        document.body.classList.add(`theme-${newTheme}`);
+    }, []);
+
+    React.useEffect(() => {
+        document.body.classList.remove('theme-light', 'theme-dark', 'theme-fluid');
+        document.body.classList.add(`theme-${theme}`);
+    }, [theme]);
 
     // Sync volume to audio ref
     React.useEffect(() => {
@@ -98,18 +129,11 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             .then(res => res.json())
             .then(data => {
                 setLibrary(data);
-                // Initial load: if queue is empty, populate with library but don't play
                 if (!isInitializedRef.current && playlist.queue.length === 0 && data.length > 0) {
+                    console.log("[PlayerContext] Hydrating empty queue with full library mapping");
                     playlist.replaceAll(data);
-                    // Use setTimeout to ensure playlist state is updated before selecting index
-                    setTimeout(() => {
-                        player.playIndex(0);
-                        // Stop playback immediately to keep it paused
-                        setTimeout(() => {
-                            player.pause();
-                            isInitializedRef.current = true;
-                        }, 50);
-                    }, 0);
+                    // Do NOT auto-play `player.playIndex(0)` anymore!
+                    isInitializedRef.current = true;
                 }
             })
             .catch(err => {
@@ -147,7 +171,9 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         showFullPlayer,
         setShowFullPlayer,
         showPlaylist,
-        setShowPlaylist
+        setShowPlaylist,
+        theme,
+        setTheme
     };
 
     return (

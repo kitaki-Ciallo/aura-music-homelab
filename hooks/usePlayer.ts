@@ -54,11 +54,26 @@ export const usePlayer = ({
   setQueue,
   setOriginalQueue,
 }: UsePlayerParams) => {
-  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [currentIndex, setCurrentIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('aura-current-index');
+      console.log("[usePlayer] Initializing currentIndex from local storage:", saved);
+      return saved ? parseInt(saved, 10) : -1;
+    } catch { return -1; }
+  });
   const [playState, setPlayState] = useState<PlayState>(PlayState.PAUSED);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState<number>(() => {
+    try {
+      return parseFloat(localStorage.getItem('aura-current-time') || '0');
+    } catch { return 0; }
+  });
   const [duration, setDuration] = useState(0);
-  const [playMode, setPlayMode] = useState<PlayMode>(PlayMode.LOOP_ALL);
+  const [playMode, setPlayMode] = useState<PlayMode>(() => {
+    try {
+      const saved = localStorage.getItem('aura-play-mode');
+      return saved !== null ? (parseInt(saved, 10) as PlayMode) : PlayMode.LOOP_ALL;
+    } catch { return PlayMode.LOOP_ALL; }
+  });
   const [matchStatus, setMatchStatus] = useState<MatchStatus>("idle");
   const audioRef = useRef<HTMLAudioElement>(null);
   const isSeekingRef = useRef(false);
@@ -173,22 +188,35 @@ export const usePlayer = ({
     [],
   );
 
+  const isInitialLoadRef = useRef(true);
+
   const handleTimeUpdate = useCallback(() => {
     if (!audioRef.current || isSeekingRef.current) return;
     const value = audioRef.current.currentTime;
     setCurrentTime(Number.isFinite(value) ? value : 0);
+    // Persist current time (throttle this conceptually, but localStorage is fast enough for 4 times/sec)
+    localStorage.setItem('aura-current-time', value.toString());
   }, []);
 
   const handleLoadedMetadata = useCallback(() => {
     if (!audioRef.current) return;
     const value = audioRef.current.duration;
     setDuration(Number.isFinite(value) ? value : 0);
+
+    // Resume saved time on initial load
+    if (isInitialLoadRef.current && currentTime > 0) {
+      if (currentTime < value) {
+        audioRef.current.currentTime = currentTime;
+      }
+      isInitialLoadRef.current = false;
+    }
+
     if (playState === PlayState.PLAYING) {
       audioRef.current
         .play()
         .catch((err) => console.error("Auto-play failed", err));
     }
-  }, [playState]);
+  }, [playState, currentTime]);
 
   const playNext = useCallback(() => {
     if (queue.length === 0) return;
@@ -514,15 +542,32 @@ export const usePlayer = ({
       return;
     }
 
+    if (currentIndex === -1) return; // Wait for initialization
+
     if (currentIndex >= queue.length || !queue[currentIndex]) {
-      const nextIndex = Math.max(0, Math.min(queue.length - 1, currentIndex));
-      setCurrentIndex(nextIndex);
+      // ONLY correct if the queue is actually populated. 
+      // If queue is empty, set index back to -1 so we don't save '0' into storage wrongly.
+      if (queue.length > 0) {
+        const nextIndex = Math.max(0, Math.min(queue.length - 1, currentIndex));
+        setCurrentIndex(nextIndex);
+      } else {
+        setCurrentIndex(-1);
+      }
       setMatchStatus("idle");
     }
   }, [queue, currentIndex]);
 
-  const [speed, setSpeed] = useState(1);
-  const [preservesPitch, setPreservesPitch] = useState(true);
+  const [speed, setSpeed] = useState<number>(() => {
+    try {
+      return parseFloat(localStorage.getItem('aura-speed') || '1');
+    } catch { return 1; }
+  });
+  const [preservesPitch, setPreservesPitch] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('aura-pitch');
+      return saved ? saved === 'true' : true;
+    } catch { return true; }
+  });
   const [resolvedAudioSrc, setResolvedAudioSrc] = useState<string | null>(null);
   const [isBuffering, setIsBuffering] = useState(false);
   const [bufferProgress, setBufferProgress] = useState(0);
@@ -673,6 +718,25 @@ export const usePlayer = ({
       releaseObjectUrl();
     };
   }, [currentSong?.fileUrl]);
+
+  // --- Persistence Effects ---
+  useEffect(() => {
+    if (currentIndex !== -1) {
+      localStorage.setItem('aura-current-index', currentIndex.toString());
+    }
+  }, [currentIndex]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-play-mode', playMode.toString());
+  }, [playMode]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-speed', speed.toString());
+  }, [speed]);
+
+  useEffect(() => {
+    localStorage.setItem('aura-pitch', preservesPitch.toString());
+  }, [preservesPitch]);
 
   return {
     audioRef,
