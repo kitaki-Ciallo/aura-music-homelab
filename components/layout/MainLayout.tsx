@@ -9,6 +9,7 @@ import { usePlayerContext } from '../../context/PlayerContext';
 import { ChevronDown } from 'lucide-react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { useTransition, animated } from '@react-spring/web';
+import ImportModal from '../ImportModal';
 
 const AnimatedOutlet = () => {
     const location = useLocation();
@@ -49,7 +50,7 @@ const AnimatedOutlet = () => {
 // Let's try a simpler approach invoked inside MainLayout directly.
 
 const MainLayout: React.FC = () => {
-    const [playlists, setPlaylists] = useState<string[]>([]);
+    const [isImportOpen, setIsImportOpen] = useState(false);
     const {
         showPlaylist,
         setShowPlaylist,
@@ -59,23 +60,20 @@ const MainLayout: React.FC = () => {
         currentSong,
         playIndex,
         importFromUrl,
-        removeSongs
+        removeSongs,
+        customPlaylists
     } = usePlayerContext();
     const accentColor = currentSong?.colors?.[0] || "#a855f7";
-
-    // Fetch playlists on mount
-    useEffect(() => {
-        fetch('/api/playlists')
-            .then(res => res.json())
-            .then(data => setPlaylists(data))
-            .catch(err => console.error("Failed to load playlists", err));
-    }, []);
 
     return (
         <div className={`flex flex-col h-screen text-white overflow-hidden font-sans relative z-10 transition-opacity duration-[400ms] ${showFullPlayer && theme === 'fluid' ? 'opacity-0' : 'opacity-100'}`}>
             <KeyboardShortcuts />
             <div className="flex-1 flex min-h-0">
-                <Sidebar playlists={playlists} />
+                {/* 
+                  Sidebar needs to support the new CustomPlaylists and an 'onOpenImport' callback 
+                  We will pass them as props next when we update Sidebar.tsx
+                */}
+                <Sidebar playlists={customPlaylists} onOpenImport={() => setIsImportOpen(true)} />
 
                 {/* Main Content Area */}
                 <div className="flex-1 overflow-y-auto relative no-scrollbar">
@@ -123,6 +121,8 @@ const MainLayout: React.FC = () => {
             <div className="h-24 bg-white/10 backdrop-blur-xl border-t border-white/10 z-[70] shrink-0">
                 <PlayerBar />
             </div>
+
+            <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
         </div>
     );
 };

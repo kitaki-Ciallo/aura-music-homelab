@@ -9,8 +9,7 @@ const Artists: React.FC = () => {
 
     const artists = useMemo(() => {
         const map = new Map<string, Song[]>();
-        // Use library (all songs) instead of queue
-        (library.length > 0 ? library : queue).forEach(song => {
+        library.forEach(song => {
             const artist = song.artist || "Unknown Artist";
             if (!map.has(artist)) {
                 map.set(artist, []);
@@ -19,17 +18,15 @@ const Artists: React.FC = () => {
         });
         // Sort by song count descending
         return Array.from(map.entries()).sort((a, b) => b[1].length - a[1].length);
-    }, [library, queue]);
+    }, [library]);
 
     // State for drill-down view
     const [selectedArtist, setSelectedArtist] = React.useState<string | null>(null);
 
-    // Filter songs for selected artist
     const displayedSongs = useMemo(() => {
         if (!selectedArtist) return [];
-        const source = library.length > 0 ? library : queue;
-        return source.filter(s => (s.artist || "Unknown Artist") === selectedArtist);
-    }, [selectedArtist, library, queue]);
+        return library.filter(s => (s.artist || "Unknown Artist") === selectedArtist);
+    }, [selectedArtist, library]);
 
     const handleArtistClick = (artist: string) => {
         setSelectedArtist(artist);

@@ -10,43 +10,20 @@ import { useNavigate } from 'react-router-dom';
 const Playlist: React.FC = () => {
     const { name } = useParams<{ name: string }>();
     const [songs, setSongs] = useState<Song[]>([]);
-    const { playIndex, currentSong, playState, togglePlay, replaceAll, queue, library } = usePlayerContext();
+    const { playIndex, currentSong, playState, togglePlay, replaceAll, customPlaylists } = usePlayerContext();
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!name || !library || library.length === 0) return;
+        if (!name || customPlaylists.length === 0) return;
 
-        const playlistSongs = library.filter(song => {
-            const fileUrl = song.fileUrl;
-            let decodedName = name;
-            try { decodedName = decodeURIComponent(name); } catch (e) { }
+        let decodedName = name;
+        try { decodedName = decodeURIComponent(name); } catch (e) { }
 
-            let decodedUrl = fileUrl;
-            try { decodedUrl = decodeURIComponent(fileUrl); } catch (e) { }
-
-            // Safe robust matching: 
-            // 1. fileUrl includes the exact decoded directory name wrapped in slashes
-            // 2. fileUrl includes the URI-encoded name
-            // 3. Fallback: fileUrl just includes the name somewhere
-            if (fileUrl.includes(`/${decodedName}/`) || fileUrl.includes(`/${name}/`)) {
-                return true;
-            }
-            if (decodedUrl.includes(`/${decodedName}/`) || decodedUrl.includes(`/${name}/`)) {
-                return true;
-            }
-
-            // Last resort fallback (case-insensitive substring)
-            if (fileUrl.toLowerCase().includes(decodedName.toLowerCase())) {
-                return true;
-            }
-
-            return false;
-        });
-
-        setSongs(playlistSongs);
+        const foundPlaylist = customPlaylists.find(p => p.name === decodedName || p.name === name);
+        setSongs(foundPlaylist?.songs || []);
         setLoading(false);
-    }, [name, library]);
+    }, [name, customPlaylists]);
 
     const handlePlay = (song: Song, index: number) => {
         // If the current song is the one clicked, just toggle play

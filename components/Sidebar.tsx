@@ -4,12 +4,14 @@ import { flushSync } from 'react-dom';
 import { NavLink } from 'react-router-dom';
 import { Home, Music, Disc, Mic2, ListMusic, PlusCircle, Search } from 'lucide-react';
 import { usePlayerContext } from '../context/PlayerContext';
+import { PlaylistInfo } from '../services/db';
 
 interface SidebarProps {
-    playlists: string[];
+    playlists: PlaylistInfo[];
+    onOpenImport: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ playlists }) => {
+const Sidebar: React.FC<SidebarProps> = ({ playlists, onOpenImport }) => {
     const { theme, setTheme } = usePlayerContext();
 
     const cycleTheme = () => {
@@ -96,25 +98,23 @@ const Sidebar: React.FC<SidebarProps> = ({ playlists }) => {
                         <h2 className="text-xs font-semibold text-white/50 uppercase tracking-wider">
                             Playlists
                         </h2>
-                        <button className="text-white/40 hover:text-white transition-colors">
+                        <button onClick={onOpenImport} className="text-white/40 hover:text-white transition-colors" title="Import new playlist">
                             <PlusCircle size={14} />
                         </button>
                     </div>
                     <div className="space-y-1">
                         {playlists.map((playlist) => (
-                            playlist !== 'All Songs' && (
-                                <NavLink
-                                    key={playlist}
-                                    to={`/playlist/${encodeURIComponent(playlist)}`}
-                                    className={({ isActive }) =>
-                                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white hover:bg-white/5'
-                                        }`
-                                    }
-                                >
-                                    <ListMusic size={18} />
-                                    {playlist}
-                                </NavLink>
-                            )
+                            <NavLink
+                                key={playlist.id}
+                                to={`/playlist/${encodeURIComponent(playlist.name)}`}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white hover:bg-white/5'
+                                    }`
+                                }
+                            >
+                                <ListMusic size={18} />
+                                {playlist.name}
+                            </NavLink>
                         ))}
                     </div>
                 </div>

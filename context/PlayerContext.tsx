@@ -3,11 +3,17 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { usePlaylist } from '../hooks/usePlaylist';
 import { usePlayer } from '../hooks/usePlayer';
 import { Song, PlayState, PlayMode } from '../types';
+import { useCustomPlaylists } from '../hooks/useCustomPlaylists';
+import { PlaylistInfo } from '../services/db';
 
 interface PlayerContextType {
     // Playlist State
     queue: Song[];
     library: Song[];
+    customPlaylists: PlaylistInfo[];
+    addPlaylist: (playlist: PlaylistInfo) => Promise<void>;
+    removePlaylist: (id: string) => Promise<void>;
+    refreshPlaylists: () => Promise<void>;
 
     // Player State
     currentSong: Song | null;
@@ -119,31 +125,77 @@ export const PlayerProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }, 0);
     };
 
-    // Library State
-    const [library, setLibrary] = React.useState<Song[]>([]);
+    const { customPlaylists, addPlaylist, removePlaylist, refreshPlaylists } = useCustomPlaylists();
     const isInitializedRef = React.useRef(false);
 
-    // Fetch library on mount
+    // --- Queue hydration from customPlaylists ---
+    // When customPlaylists are loaded and hydrated (with valid fileUrls from directory handles),
+    // update any queue songs that have empty fileUrl by matching them against the hydrated playlists.
     React.useEffect(() => {
-        fetch('/api/songs')
-            .then(res => res.json())
-            .then(data => {
-                setLibrary(data);
-                if (!isInitializedRef.current && playlist.queue.length === 0 && data.length > 0) {
-                    console.log("[PlayerContext] Hydrating empty queue with full library mapping");
-                    playlist.replaceAll(data);
-                    // Do NOT auto-play `player.playIndex(0)` anymore!
-                    isInitializedRef.current = true;
+        if (customPlaylists.length === 0) return;
+        if (playlist.queue.length === 0) return;
+
+        // Build a lookup map: song id -> hydrated song (with valid fileUrl)
+        const hydratedSongMap = new Map<string, Song>();
+        customPlaylists.forEach(pl => {
+            pl.songs.forEach(song => {
+                if (song.fileUrl && song.fileUrl !== '') {
+                    hydratedSongMap.set(song.id, song);
                 }
-            })
-            .catch(err => {
-                console.error("Failed to fetch library", err);
             });
-    }, []);
+        });
+
+        // Check if any queue songs need hydration
+        const needsHydration = playlist.queue.some(
+            s => (!s.fileUrl || s.fileUrl === '') && s.relativePath && hydratedSongMap.has(s.id)
+        );
+
+        if (!needsHydration) return;
+
+        const hydrated = playlist.queue.map(song => {
+            if ((!song.fileUrl || song.fileUrl === '') && hydratedSongMap.has(song.id)) {
+                return { ...song, ...hydratedSongMap.get(song.id)! };
+            }
+            return song;
+        });
+
+        playlist.setQueue(hydrated);
+        playlist.setOriginalQueue(prev =>
+            prev.map(song => {
+                if ((!song.fileUrl || song.fileUrl === '') && hydratedSongMap.has(song.id)) {
+                    return { ...song, ...hydratedSongMap.get(song.id)! };
+                }
+                return song;
+            })
+        );
+    }, [customPlaylists]);
+
+    // Calculate library dynamically from all imported playlists
+    const library = React.useMemo(() => {
+        const allSongs: Song[] = [];
+        const seenIds = new Set<string>();
+
+        customPlaylists.forEach(pl => {
+            pl.songs.forEach(song => {
+                if (!seenIds.has(song.id)) {
+                    seenIds.add(song.id);
+                    allSongs.push(song);
+                }
+            });
+        });
+        return allSongs;
+    }, [customPlaylists]);
+
+    // Initial load aggressive hydration removed to allow async queue persistence to safely hydrate
+    // without getting overridden by this component.
 
     const value: PlayerContextType = {
         queue: playlist.queue,
         library, // Expose library
+        customPlaylists,
+        addPlaylist,
+        removePlaylist,
+        refreshPlaylists,
         currentSong: player.currentSong,
         playState: player.playState,
         currentTime: player.currentTime,

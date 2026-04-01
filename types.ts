@@ -19,6 +19,7 @@ export interface Song {
   title: string;
   artist: string;
   fileUrl: string;
+  relativePath?: string; // Relative path within the directory handle (for File System Access API)
   coverUrl?: string;
   lyrics?: LyricLine[];
   colors?: string[]; // Array of dominant colors

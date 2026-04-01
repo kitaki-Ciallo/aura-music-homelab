@@ -1,8 +1,8 @@
 const defaultColors = [
-  "rgb(60, 20, 80)",
-  "rgb(100, 40, 60)",
-  "rgb(20, 20, 40)",
-  "rgb(40, 40, 90)",
+  "rgb(200, 180, 230)",
+  "rgb(240, 190, 200)",
+  "rgb(180, 210, 240)",
+  "rgb(190, 230, 210)",
 ];
 
 const vertexShaderSource = `
@@ -104,7 +104,7 @@ let lastFrameTime = 0;
 let lastRenderTime = 0;
 let playing = true;
 let paused = false;
-let currentColors = [...defaultColors];
+let targetColors = [...defaultColors];
 let rafId: number | null = null;
 
 const parseColor = (colorStr: string): [number, number, number] => {
@@ -115,6 +115,12 @@ const parseColor = (colorStr: string): [number, number, number] => {
     parseInt(match[2], 10) / 255,
     parseInt(match[3], 10) / 255,
   ];
+};
+
+let currentRgbValues: [number, number, number][] = targetColors.map(parseColor);
+
+const lerp = (start: number, end: number, t: number) => {
+  return start * (1 - t) + end * t;
 };
 
 const createShader = (
@@ -190,8 +196,25 @@ const render = (now: number) => {
     timeAccumulator += delta;
   }
 
-  const colors = currentColors.length >= 4 ? currentColors : defaultColors;
-  const [c1, c2, c3, c4] = colors.map(parseColor);
+  const colors = targetColors.length >= 4 ? targetColors : defaultColors;
+  const targetRgbValues = colors.map(parseColor);
+
+  const TRANSITION_SPEED = 0.02;
+
+  // Interpolate currentRgbValues towards targetRgbValues
+  for (let i = 0; i < 4; i++) {
+    const target = targetRgbValues[i] || targetRgbValues[targetRgbValues.length - 1];
+    let current = currentRgbValues[i];
+    if (!current) {
+      current = [...target] as [number, number, number];
+      currentRgbValues[i] = current;
+    }
+    current[0] = lerp(current[0], target[0], TRANSITION_SPEED);
+    current[1] = lerp(current[1], target[1], TRANSITION_SPEED);
+    current[2] = lerp(current[2], target[2], TRANSITION_SPEED);
+  }
+
+  const [c1, c2, c3, c4] = currentRgbValues;
 
   gl.uniform1f(timeUniform, timeAccumulator * 0.0005);
   gl.uniform3f(color1Uniform, c1[0], c1[1], c1[2]);
@@ -228,7 +251,8 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
       return;
     }
 
-    currentColors = data.colors ?? defaultColors;
+    targetColors = data.colors ?? defaultColors;
+    currentRgbValues = targetColors.map(parseColor);
     lastFrameTime = performance.now();
     lastRenderTime = performance.now();
     timeAccumulator = 0;
@@ -249,7 +273,7 @@ self.onmessage = (event: MessageEvent<WorkerCommand>) => {
   }
 
   if (data.type === "colors" && data.colors) {
-    currentColors = data.colors;
+    targetColors = data.colors;
     return;
   }
 

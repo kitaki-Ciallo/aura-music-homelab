@@ -55,41 +55,33 @@ export interface ImportResult {
 }
 
 export const usePlaylist = () => {
-  const [queue, setQueue] = useState<Song[]>(() => {
-    try {
-      const saved = localStorage.getItem('aura-queue');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) { console.warn("Failed to load queue from storage"); }
-    return [];
-  });
+  const [queue, setQueue] = useState<Song[]>([]);
+  const [originalQueue, setOriginalQueue] = useState<Song[]>([]);
 
-  const [originalQueue, setOriginalQueue] = useState<Song[]>(() => {
-    try {
-      const saved = localStorage.getItem('aura-original-queue');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) { console.warn("Failed to load original queue from storage"); }
-    return [];
-  });
-
+  // Load queue fully from IndexedDB
   useEffect(() => {
-    try {
-      const savableQueue = queue.filter(s => !s.fileUrl || !s.fileUrl.startsWith('blob:'));
-      localStorage.setItem('aura-queue', JSON.stringify(savableQueue));
-    } catch (e) { console.warn("Failed to serialize queue", e); }
+    let active = true;
+    import('../services/db').then(({ getSavedQueue }) => {
+      getSavedQueue().then(saved => {
+        if (active && saved && saved.length > 0) {
+          setQueue(saved);
+          setOriginalQueue(saved);
+        }
+      });
+    });
+    return () => { active = false; };
+  }, []);
+
+  // Automatically save queue on changes
+  useEffect(() => {
+    // Save cleanly on a short debounce to avoid spam
+    const timeout = setTimeout(() => {
+      if (queue.length > 0) {
+        import('../services/db').then(({ saveCurrentQueue }) => saveCurrentQueue(queue));
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
   }, [queue]);
-
-  useEffect(() => {
-    try {
-      const savableOriginal = originalQueue.filter(s => !s.fileUrl || !s.fileUrl.startsWith('blob:'));
-      localStorage.setItem('aura-original-queue', JSON.stringify(savableOriginal));
-    } catch (e) { console.warn("Failed to serialize original queue", e); }
-  }, [originalQueue]);
 
   const updateSongInQueue = useCallback(
     (id: string, updates: Partial<Song>) => {
@@ -253,6 +245,41 @@ export const usePlaylist = () => {
               }
             }
           }
+
+          // --- NEW LOGIC: Fetch missing metadata from Netease API ---
+          // If we are missing cover art, or if artist is unknown, try to fetch from cloud
+          if (!coverUrl || artist === "Unknown Artist") {
+            try {
+              const { searchNetEase } = await import("../services/lyricsService");
+              // Search using title and artist (if known)
+              const searchQuery = artist !== "Unknown Artist" ? `${title} ${artist}` : title;
+              const searchResults = await searchNetEase(searchQuery, { limit: 1 });
+
+              if (searchResults && searchResults.length > 0) {
+                const cloudMatch = searchResults[0];
+
+                // Only update if we don't have the info locally
+                if (artist === "Unknown Artist" && cloudMatch.artist) {
+                  artist = cloudMatch.artist;
+                }
+                if (album === "Unknown Album" && cloudMatch.album) {
+                  album = cloudMatch.album;
+                }
+                if (!coverUrl && cloudMatch.coverUrl) {
+                  coverUrl = cloudMatch.coverUrl;
+                  try {
+                    colors = await extractColors(coverUrl);
+                  } catch (e) {
+                    console.warn("Failed to extract colors from cloud cover", e);
+                  }
+                }
+              }
+            } catch (cloudErr) {
+              console.warn("Failed to fetch missing metadata from cloud", cloudErr);
+            }
+          }
+          // --- END NEW LOGIC ---
+
         } catch (err) {
           console.warn("Local metadata extraction failed", err);
         }
