@@ -259,14 +259,15 @@ const SmartImage: React.FC<SmartImageProps> = ({
       }
     };
 
-    imageElement.crossOrigin = "anonymous";
+    // Skip all canvas processing — display original images without recompression
+    imageElement.referrerPolicy = "no-referrer";
     imageElement.onload = () => {
       if (canceled) return;
       if (!imageElement.naturalWidth || !imageElement.naturalHeight) {
         handleFallback();
         return;
       }
-      loadImage();
+      setFinalUrl(src, false);
     };
     imageElement.onerror = () => {
       if (canceled) return;
@@ -295,6 +296,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
           className={imgClassName}
           style={imgStyle}
           loading={loading}
+          referrerPolicy="no-referrer"
           {...imgProps}
         />
       ) : (
