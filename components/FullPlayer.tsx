@@ -9,6 +9,7 @@ import MediaSessionController from "./MediaSessionController";
 import { usePlayerContext } from "../context/PlayerContext";
 import { ChevronDown, Sun, Moon, Droplets, Maximize, Minimize } from "lucide-react";
 import { flushSync } from "react-dom";
+import { useTransition, animated } from "@react-spring/web";
 import PlaylistPanel from "./PlaylistPanel";
 
 const FullPlayer: React.FC = () => {
@@ -63,6 +64,13 @@ const FullPlayer: React.FC = () => {
             setDisplayAccentColor(currentSong.colors[0]);
         }
     }, [currentSong?.colors]);
+
+    const drawerTransitions = useTransition(showPlaylist, {
+        from: { opacity: 0, x: 100, backdropOpacity: 0 },
+        enter: { opacity: 1, x: 0, backdropOpacity: 1 },
+        leave: { opacity: 0, x: 100, backdropOpacity: 0 },
+        config: { tension: 280, friction: 32 },
+    });
 
     // Detect mobile layout
     useEffect(() => {
@@ -288,9 +296,26 @@ const FullPlayer: React.FC = () => {
             </div>
 
             {/* Playlist Sidebar Overlay (Local to FullPlayer) */}
-            {showPlaylist && (
-                <div className="absolute inset-x-0 top-0 bottom-0 z-[120] bg-white/10 backdrop-blur-sm flex justify-end animate-in fade-in duration-300 text-white">
-                    <div className="w-full max-w-sm h-full bg-white/10 backdrop-blur-3xl border-l border-white/10 shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300">
+            {drawerTransitions((styles, item) => item && (
+                <animated.div
+                    className="absolute inset-x-0 top-0 bottom-0 z-[120] flex justify-end isolate text-white"
+                    style={{ pointerEvents: item ? 'auto' : 'none' } as any}
+                >
+                    {/* Backdrop */}
+                    <animated.div
+                        className="absolute inset-0 bg-white/10 backdrop-blur-sm -z-10"
+                        style={{ opacity: styles.backdropOpacity }}
+                        onClick={() => setShowPlaylist(false)}
+                    />
+
+                    <animated.div
+                        className="w-full max-w-sm h-full bg-white/20 backdrop-blur-3xl saturate-150 border-l border-white/20 shadow-2xl flex flex-col relative"
+                        style={{
+                            opacity: styles.opacity,
+                            transform: styles.x.to(x => `translateX(${x}%)`),
+                            boxShadow: '-10px 0 50px rgba(0,0,0,0.15), inset 1px 0 0 rgba(255,255,255,0.15)'
+                        } as any}
+                    >
                         <div className="p-4 flex items-center justify-between border-b border-white/10">
                             <h2 className="text-xl font-bold">Queue</h2>
                             <button
@@ -314,14 +339,9 @@ const FullPlayer: React.FC = () => {
                                 style={{ maxHeight: 'none', borderRadius: 0, position: 'relative', bottom: 'auto', right: 'auto' }}
                             />
                         </div>
-                    </div>
-                    {/* Backdrop click to close */}
-                    <div
-                        className="absolute inset-0 -z-10"
-                        onClick={() => setShowPlaylist(false)}
-                    />
-                </div>
-            )}
+                    </animated.div>
+                </animated.div>
+            ))}
 
         </div>
     );

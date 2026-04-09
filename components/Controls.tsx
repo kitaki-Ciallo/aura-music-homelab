@@ -222,7 +222,7 @@ const Controls: React.FC<ControlsProps> = ({
   const displayTime = isSeeking ? seekTime : interpolatedTime;
 
   const [coverSpring, coverApi] = useSpring(() => ({
-    scale: isPlaying ? 1.04 : 0.94,
+    scale: isPlaying ? 1.0 : 0.9,
     boxShadow: isPlaying
       ? "0 20px 35px rgba(0,0,0,0.55)"
       : "0 10px 20px rgba(0,0,0,0.45)",
@@ -231,7 +231,7 @@ const Controls: React.FC<ControlsProps> = ({
 
   useEffect(() => {
     coverApi.start({
-      scale: isPlaying ? 1.04 : 0.94,
+      scale: isPlaying ? 1.0 : 0.9,
       boxShadow: isPlaying
         ? "0 20px 35px rgba(0,0,0,0.55)"
         : "0 10px 20px rgba(0,0,0,0.45)",
@@ -239,23 +239,39 @@ const Controls: React.FC<ControlsProps> = ({
     });
   }, [isPlaying, coverApi]);
 
+  const isInitialMount = useRef(true);
+  const prevCoverUrl = useRef(coverUrl);
+  const isPlayingRef = useRef(isPlaying);
+
   useEffect(() => {
-    if (!coverUrl) return;
-    coverApi.start({
-      scale: 0.96,
-      config: { tension: 320, friction: 24 },
-    });
-    const timeout = window.setTimeout(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevCoverUrl.current = coverUrl;
+      return;
+    }
+
+    if (coverUrl && coverUrl !== prevCoverUrl.current) {
+      prevCoverUrl.current = coverUrl;
       coverApi.start({
-        scale: isPlaying ? 1.04 : 0.94,
-        boxShadow: isPlaying
-          ? "0 20px 35px rgba(0,0,0,0.55)"
-          : "0 10px 20px rgba(0,0,0,0.45)",
-        config: { tension: 260, friction: 32 },
+        scale: 0.95,
+        config: { tension: 320, friction: 24 },
       });
-    }, 180);
-    return () => clearTimeout(timeout);
-  }, [coverUrl, isPlaying, coverApi]);
+      const timeout = window.setTimeout(() => {
+        coverApi.start({
+          scale: isPlayingRef.current ? 1.0 : 0.9,
+          boxShadow: isPlayingRef.current
+            ? "0 20px 35px rgba(0,0,0,0.55)"
+            : "0 10px 20px rgba(0,0,0,0.45)",
+          config: { tension: 260, friction: 32 },
+        });
+      }, 180);
+      return () => clearTimeout(timeout);
+    }
+  }, [coverUrl, coverApi]);
 
   // Close popups when clicking outside
   useEffect(() => {
