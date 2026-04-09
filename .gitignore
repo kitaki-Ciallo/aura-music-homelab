@@ -28,3 +28,5 @@ bun.lock
 
 # User Music Files
 music/
+
+netease-api/

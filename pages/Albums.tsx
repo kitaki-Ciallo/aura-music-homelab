@@ -9,8 +9,7 @@ const Albums: React.FC = () => {
 
     const albums = useMemo(() => {
         const map = new Map<string, Song[]>();
-        // Use library (all songs) instead of queue
-        (library.length > 0 ? library : queue).forEach(song => {
+        library.forEach(song => {
             const album = song.album || "Unknown Album";
             if (!map.has(album)) {
                 map.set(album, []);
@@ -18,7 +17,7 @@ const Albums: React.FC = () => {
             map.get(album)?.push(song);
         });
         return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    }, [library, queue]);
+    }, [library]);
 
     // State for drill-down view
     const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -26,9 +25,8 @@ const Albums: React.FC = () => {
     // Filter songs for selected album
     const displayedSongs = useMemo(() => {
         if (!selectedAlbum) return [];
-        const source = library.length > 0 ? library : queue;
-        return source.filter(s => (s.album || "Unknown Album") === selectedAlbum);
-    }, [selectedAlbum, library, queue]);
+        return library.filter(s => (s.album || "Unknown Album") === selectedAlbum);
+    }, [selectedAlbum, library]);
 
     const handleAlbumClick = (album: string) => {
         setSelectedAlbum(album);

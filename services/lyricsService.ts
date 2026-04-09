@@ -1,60 +1,63 @@
-export const fetchViaProxy = async (url: string, options: RequestInit = {}) => {
+export const fetchViaProxy = async (url: string, options: RequestInit = {}): Promise<any> => {
+  // For same-origin URLs (e.g. /neteaseapi/*), direct fetch is sufficient
   try {
-    const encodedUrl = encodeURIComponent(url);
-    const response = await fetch(`/api/netease?url=${encodedUrl}`, options);
-    if (!response.ok) {
-      throw new Error(`Proxy error: ${response.status}`);
-    }
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
-  } catch (error) {
-    console.error("Proxy fetch failed:", error);
+  } catch (directError) {
+    // For external URLs, try allorigins proxy as fallback
+    if (url.startsWith('http')) {
+      try {
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`Proxy: ${response.status}`);
+        return await response.json();
+      } catch { /* fall through */ }
+    }
+    console.error("Fetch failed for:", url);
+    return undefined;
   }
 };
 
-export const fetchLocalLyrics = async (fileUrl: string) => {
+import { getLyricsFromCache, saveLyricsToCache } from './db';
+
+/**
+ * Fetch lyrics from IndexedDB cache (no backend needed).
+ */
+export const fetchLocalLyrics = async (songId: string): Promise<
+  { lrc: string; yrc?: string; tLrc?: string; metadata?: string[]; coverUrl?: string } | null
+> => {
   try {
-    // Remove /music/ prefix to get relative path
-    const relativePath = fileUrl.replace(/^\/music\//, '');
-    const response = await fetch(`/api/lyrics?file=${encodeURIComponent(relativePath)}`);
-    if (response.ok) {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        return await response.json();
-      }
-      return await response.text();
+    return await getLyricsFromCache(songId);
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Save lyrics to IndexedDB cache (no backend needed).
+ */
+export const saveLocalLyrics = async (songId: string, lyrics: string | object) => {
+  try {
+    if (typeof lyrics === 'object') {
+      await saveLyricsToCache(songId, lyrics as any);
+    } else {
+      // Convert plain LRC string to the object format for consistent storage
+      await saveLyricsToCache(songId, { lrc: lyrics, metadata: [] });
     }
-    return null;
   } catch (error) {
-    // console.warn("Local lyrics fetch failed:", error);
-    return null;
+    console.error("Failed to save lyrics to cache:", error);
   }
-}
-
-export const saveLocalLyrics = async (fileUrl: string, lyrics: string | object) => {
-  try {
-    const relativePath = fileUrl.replace(/^\/music\//, '');
-    await fetch('/api/lyrics', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        file: relativePath,
-        lyrics
-      })
-    });
-  } catch (error) {
-    console.error("Failed to save local lyrics:", error);
-  }
-}
+};
 
 
 
-const LYRIC_API_BASE = "https://163api.qijieya.cn";
+// Public Netease API (same as original dingyi222666/aura-music)
+const LYRIC_API_BASE = "https://zm.wwoyun.cn";
 const METING_API = "https://api.qijieya.cn/meting/";
-const NETEASE_SEARCH_API = "https://163api.qijieya.cn/cloudsearch";
+const NETEASE_SEARCH_API = "https://zm.wwoyun.cn/cloudsearch";
 const NETEASE_API_BASE = "http://music.163.com/api";
-const NETEASECLOUD_API_BASE = "https://163api.qijieya.cn";
+const NETEASECLOUD_API_BASE = "https://zm.wwoyun.cn";
 
 const METADATA_KEYWORDS = [
   "歌词贡献者",
@@ -229,7 +232,12 @@ export const searchNetEase = async (
   try {
     const parsedSearchApiResponse = (await fetchViaProxy(
       searchApiUrl,
-    )) as NeteaseSearchResponse;
+    )) as NeteaseSearchResponse | undefined;
+
+    if (!parsedSearchApiResponse) {
+      throw new Error("Search API returned empty response");
+    }
+
     const songs = parsedSearchApiResponse.result?.songs ?? [];
 
     if (songs.length === 0) {
@@ -238,7 +246,28 @@ export const searchNetEase = async (
 
     return songs.map(mapNeteaseSongToTrack);
   } catch (error) {
-    console.error("NetEase search error", error);
+    console.warn("NetEase search error, trying meting fallback", error);
+    try {
+      const metingUrl = `${METING_API}?server=netease&type=search&id=${encodeURIComponent(keyword)}`;
+      const metingResponse = await fetchViaProxy(metingUrl);
+      if (Array.isArray(metingResponse)) {
+        return metingResponse.slice(0, limit).map((song: any) => {
+          const idMatch = song.url?.match(/id=(\d+)/);
+          const id = idMatch ? idMatch[1] : "";
+          return {
+            id,
+            title: song.name,
+            artist: song.artist,
+            album: "", // meting doesn't return album in search
+            coverUrl: song.pic,
+            isNetease: true as const,
+            neteaseId: id,
+          };
+        }).filter(s => s.id);
+      }
+    } catch (fallbackError) {
+      console.error("Meting fallback failed", fallbackError);
+    }
     return [];
   }
 };
@@ -257,6 +286,11 @@ export const fetchNeteasePlaylist = async (
     while (shouldContinue) {
       const url = `${NETEASECLOUD_API_BASE}/playlist/track/all?id=${playlistId}&limit=${limit}&offset=${offset}`;
       const data = (await fetchViaProxy(url)) as NeteasePlaylistResponse;
+
+      if (!data) {
+        throw new Error("API returned empty response");
+      }
+
       const songs = data.songs ?? [];
       if (songs.length === 0) {
         break;
@@ -276,7 +310,28 @@ export const fetchNeteasePlaylist = async (
 
     return allTracks;
   } catch (e) {
-    console.error("Playlist fetch error", e);
+    console.warn("Playlist fetch error, trying meting fallback", e);
+    try {
+      const metingUrl = `${METING_API}?server=netease&type=playlist&id=${playlistId}`;
+      const metingResponse = await fetchViaProxy(metingUrl);
+      if (Array.isArray(metingResponse)) {
+        return metingResponse.map((song: any) => {
+          const idMatch = song.url?.match(/id=(\d+)/);
+          const id = idMatch ? idMatch[1] : "";
+          return {
+            id,
+            title: song.name,
+            artist: song.artist,
+            album: "",
+            coverUrl: song.pic,
+            isNetease: true as const,
+            neteaseId: id,
+          };
+        }).filter(s => s.id);
+      }
+    } catch (fallbackError) {
+      console.error("Meting fallback failed", fallbackError);
+    }
     return [];
   }
 };
@@ -289,13 +344,38 @@ export const fetchNeteaseSong = async (
     const data = (await fetchViaProxy(
       url,
     )) as NeteaseSongDetailResponse;
+
+    if (!data) {
+      throw new Error("API returned empty response");
+    }
+
     const track = data.songs?.[0];
     if (data.code === 200 && track) {
       return mapNeteaseSongToTrack(track);
     }
     return null;
   } catch (e) {
-    console.error("Song fetch error", e);
+    console.warn("Song fetch error, trying meting fallback", e);
+    try {
+      const metingUrl = `${METING_API}?server=netease&type=song&id=${songId}`;
+      const metingResponse = await fetchViaProxy(metingUrl);
+      if (Array.isArray(metingResponse) && metingResponse.length > 0) {
+        const song = metingResponse[0];
+        const idMatch = song.url?.match(/id=(\d+)/);
+        const id = idMatch ? idMatch[1] : songId;
+        return {
+          id,
+          title: song.name,
+          artist: song.artist,
+          album: "",
+          coverUrl: song.pic,
+          isNetease: true,
+          neteaseId: id,
+        };
+      }
+    } catch (fallbackError) {
+      console.error("Meting fallback failed", fallbackError);
+    }
     return null;
   }
 };
@@ -306,7 +386,8 @@ export const searchAndMatchLyrics = async (
   artist: string,
 ): Promise<{ lrc: string; yrc?: string; tLrc?: string; metadata: string[]; coverUrl?: string } | null> => {
   try {
-    const songs = await searchNetEase(`${title} ${artist}`, { limit: 5 });
+    const searchQuery = artist && artist !== "Unknown Artist" ? `${title} ${artist}` : title;
+    const songs = await searchNetEase(searchQuery, { limit: 5 });
 
     if (songs.length === 0) {
       console.warn("No songs found on Cloud");
@@ -337,6 +418,10 @@ export const fetchLyricsById = async (
     // 使用網易雲音樂 API 獲取歌詞
     const lyricUrl = `${NETEASECLOUD_API_BASE}/lyric/new?id=${songId}`;
     const lyricData = await fetchViaProxy(lyricUrl);
+
+    if (!lyricData) {
+      throw new Error("API returned empty response");
+    }
 
     const rawYrc = lyricData.yrc?.lyric;
     const rawLrc = lyricData.lrc?.lyric;
@@ -390,7 +475,47 @@ export const fetchLyricsById = async (
       metadata: Array.from(metadataSet),
     };
   } catch (e) {
-    console.error("Lyric fetch error", e);
+    console.warn("Lyric fetch error, trying meting fallback", e);
+    try {
+      // Meting API doesn't provide separate yrc/tLrc easily via simple type=lrc
+      // But we can try to fetch them if we need to, or just return the basic lrc
+      // Wait, Meting API might return translated lyrics mixed in if we just use type=lrc
+      // Let's try to fetch the raw JSON from a different proxy if possible, or just use the mixed one
+      const metingUrl = `${METING_API}?server=netease&type=lrc&id=${songId}`;
+      const response = await fetch(metingUrl);
+      if (response.ok) {
+        const lrc = await response.text();
+        if (lrc && !lrc.includes('"error"')) {
+          // Check if the lrc contains translations in parentheses and try to separate them
+          // This is a basic heuristic for Meting's mixed lyrics
+          let cleanLrc = "";
+          let cleanTLrc = "";
+
+          const lines = lrc.split('\n');
+          for (const line of lines) {
+            // Match lines like: [00:05.44]君を見てるといつもハートとき~とき (每当看到你的时候~心砰砰直跳)
+            const match = line.match(/^(\[\d{2}:\d{2}\.\d{2,3}\])(.*?) \((.*?)\)$/);
+            if (match) {
+              cleanLrc += `${match[1]}${match[2]}\n`;
+              cleanTLrc += `${match[1]}${match[3]}\n`;
+            } else {
+              cleanLrc += `${line}\n`;
+            }
+          }
+
+          const { clean, metadata } = extractMetadataLines(cleanLrc);
+          const { clean: tClean } = extractMetadataLines(cleanTLrc);
+
+          return {
+            lrc: clean || cleanLrc,
+            tLrc: tClean || undefined,
+            metadata,
+          };
+        }
+      }
+    } catch (fallbackError) {
+      console.error("Meting fallback failed", fallbackError);
+    }
     return null;
   }
 };
@@ -399,13 +524,13 @@ import { parseLyrics } from "./lyrics";
 import { LyricLine } from "../types";
 
 export const mergeLyricsWithMetadata = (
-  result: { lrc: string; yrc?: string; tLrc?: string; metadata: string[]; coverUrl?: string }
+  result: { lrc: string; yrc?: string; tLrc?: string; metadata?: string[]; coverUrl?: string }
 ): LyricLine[] => {
   const parsed = parseLyrics(result.lrc, result.tLrc, {
     yrcContent: result.yrc,
   });
-  const metadataCount = result.metadata.length;
-  const metadataLines = result.metadata.map((text, idx) => ({
+  const metadataCount = result.metadata?.length || 0;
+  const metadataLines = (result.metadata || []).map((text, idx) => ({
     time: -0.1 * (metadataCount - idx),
     text,
     isMetadata: true,

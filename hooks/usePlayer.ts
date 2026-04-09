@@ -86,6 +86,7 @@ export const usePlayer = ({
 
   const currentSong = queue[currentIndex] ?? null;
   const accentColor = currentSong?.colors?.[0] || "#a855f7";
+  const queueHasLoadedRef = useRef(false);
 
   const reorderForShuffle = useCallback(() => {
     if (originalQueue.length === 0) return;
@@ -375,29 +376,19 @@ export const usePlayer = ({
     const fetchLyrics = async () => {
       setMatchStatus("matching");
       try {
-        // Step 1: Check local lyrics first
-        if (currentSong.fileUrl) {
-          const localLyrics = await fetchLocalLyrics(currentSong.fileUrl);
-          if (cancelled) return;
+        // Step 1: Check IndexedDB lyrics cache first
+        const cachedLyrics = await fetchLocalLyrics(songId);
+        if (cancelled) return;
 
-          if (localLyrics) {
-            // Found local lyrics
-            let parsed;
-            if (typeof localLyrics === 'object') {
-              // It's JSON (YRC/LRC combined)
-              parsed = mergeLyricsWithMetadata(localLyrics as any);
-            } else {
-              // It's a string (LRC)
-              parsed = parseLyrics(localLyrics);
-            }
-
-            updateSongInQueue(songId, {
-              lyrics: parsed,
-              needsLyricsMatch: false,
-            });
-            markMatchSuccess();
-            return;
-          }
+        if (cachedLyrics) {
+          // Found cached lyrics
+          const parsed = mergeLyricsWithMetadata(cachedLyrics as any);
+          updateSongInQueue(songId, {
+            lyrics: parsed,
+            needsLyricsMatch: false,
+          });
+          markMatchSuccess();
+          return;
         }
 
         if (isNeteaseSong && songNeteaseId) {
@@ -411,10 +402,8 @@ export const usePlayer = ({
               lyrics: mergeLyricsWithMetadata(raw),
               needsLyricsMatch: false,
             });
-            // Auto-save to local (Save full JSON object to preserve YRC)
-            if (currentSong.fileUrl) {
-              saveLocalLyrics(currentSong.fileUrl, raw);
-            }
+            // Auto-save to IndexedDB lyrics cache
+            saveLocalLyrics(songId, raw);
             markMatchSuccess();
           } else {
             markMatchFailed();
@@ -426,6 +415,7 @@ export const usePlayer = ({
           );
           if (cancelled) return;
           if (result) {
+            console.log(`[Lyrics] matched for "${songTitle}" - has yrc:`, !!result.yrc, "has tLrc:", !!result.tLrc);
 
             // Enrich metadata if missing
             const updates: Partial<Song> = {
@@ -433,16 +423,18 @@ export const usePlayer = ({
               needsLyricsMatch: false,
             };
 
+            // Log word-by-word status
+            const hasWords = updates.lyrics?.some(l => l.words && l.words.length > 0);
+            console.log(`[Lyrics] parsed lines: ${updates.lyrics?.length}, has word timing: ${hasWords}`);
+
             if (!currentSong.coverUrl && result.coverUrl) {
               updates.coverUrl = result.coverUrl;
             }
 
             updateSongInQueue(songId, updates);
 
-            // Auto-save to local (Save full JSON object)
-            if (currentSong.fileUrl) {
-              saveLocalLyrics(currentSong.fileUrl, result);
-            }
+            // Auto-save to IndexedDB lyrics cache
+            saveLocalLyrics(songId, result);
             markMatchSuccess();
           } else {
             markMatchFailed();
@@ -531,6 +523,8 @@ export const usePlayer = ({
 
   useEffect(() => {
     if (queue.length === 0) {
+      // Don't reset currentIndex if queue hasn't loaded yet from IndexedDB
+      if (!queueHasLoadedRef.current) return;
       if (currentIndex === -1) return;
       audioRef.current?.pause();
       if (audioRef.current) audioRef.current.currentTime = 0;
@@ -542,16 +536,15 @@ export const usePlayer = ({
       return;
     }
 
+    // Mark that queue has been populated at least once
+    queueHasLoadedRef.current = true;
+
     if (currentIndex === -1) return; // Wait for initialization
 
     if (currentIndex >= queue.length || !queue[currentIndex]) {
-      // ONLY correct if the queue is actually populated. 
-      // If queue is empty, set index back to -1 so we don't save '0' into storage wrongly.
       if (queue.length > 0) {
         const nextIndex = Math.max(0, Math.min(queue.length - 1, currentIndex));
         setCurrentIndex(nextIndex);
-      } else {
-        setCurrentIndex(-1);
       }
       setMatchStatus("idle");
     }
@@ -625,7 +618,7 @@ export const usePlayer = ({
       };
     }
 
-    // Check cache first
+    // Check in-memory cache
     const cachedBlob = audioResourceCache.get(fileUrl);
     if (cachedBlob) {
       releaseObjectUrl();
@@ -639,78 +632,11 @@ export const usePlayer = ({
       };
     }
 
-    // Use the original URL directly - let browser handle native buffering
-    // This is the most reliable approach and works for any file size
+    // For http(s) URLs (e.g. Netease), use directly and let browser handle buffering
     releaseObjectUrl();
     setResolvedAudioSrc(null); // Use original fileUrl via fallback in audio element
-    setIsBuffering(true);
+    setIsBuffering(false);
     setBufferProgress(0);
-
-    // Download in background for caching (does not affect playback)
-    const cacheInBackground = async () => {
-      if (typeof fetch !== "function") return;
-
-      controller = new AbortController();
-      try {
-        const response = await fetch(fileUrl, { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error("Failed to load audio: " + response.status);
-        }
-
-        const totalBytes = Number(response.headers.get("content-length")) || 0;
-
-        if (!response.body) {
-          const fallbackBlob = await response.blob();
-          if (canceled) return;
-          audioResourceCache.set(fileUrl, fallbackBlob);
-          setBufferProgress(1);
-          // Don't switch - will be used next time
-          return;
-        }
-
-        const reader = response.body.getReader();
-        const chunks: BlobPart[] = [];
-        let loaded = 0;
-
-        while (!canceled) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) {
-            chunks.push(value);
-            loaded += value.byteLength;
-            if (totalBytes > 0) {
-              setBufferProgress(Math.min(loaded / totalBytes, 0.99));
-            } else {
-              setBufferProgress((prev) => {
-                const increment = value.byteLength / (5 * 1024 * 1024);
-                return Math.min(0.95, prev + increment);
-              });
-            }
-          }
-        }
-
-        if (canceled) return;
-
-        const blob = new Blob(chunks, {
-          type: response.headers.get("content-type") || "audio/mpeg",
-        });
-        audioResourceCache.set(fileUrl, blob);
-        setBufferProgress(1);
-        // Don't switch to blob URL during playback - it would restart the audio
-        // The cached blob will be used automatically next time this song is played
-      } catch (error) {
-        if (!canceled) {
-          // Not critical - browser is still playing via native buffering
-          console.warn("Background audio caching failed:", error);
-        }
-      } finally {
-        if (!canceled) {
-          setIsBuffering(false);
-        }
-      }
-    };
-
-    cacheInBackground();
 
     return () => {
       canceled = true;

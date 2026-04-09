@@ -12,7 +12,7 @@ concurrency:
 on:
   push:
     branches:
-      - main
+      - Frontend_only
   workflow_dispatch:
 
 jobs:

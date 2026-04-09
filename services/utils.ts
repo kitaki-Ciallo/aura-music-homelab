@@ -118,6 +118,7 @@ export const parseAudioMetadata = (
   artist?: string;
   album?: string;
   picture?: string;
+  pictureBlob?: Blob;
   lyrics?: string;
 }> => {
   return new Promise((resolve) => {
@@ -137,12 +138,9 @@ export const parseAudioMetadata = (
 
             if (tags.picture) {
               const { data, format } = tags.picture;
-              let base64String = "";
-              const len = data.length;
-              for (let i = 0; i < len; i++) {
-                base64String += String.fromCharCode(data[i]);
-              }
-              pictureUrl = `data:${format};base64,${window.btoa(base64String)}`;
+              const uint8 = new Uint8Array(data);
+              const blob = new Blob([uint8], { type: format });
+              pictureUrl = URL.createObjectURL(blob);
             }
 
             // Extract embedded lyrics (USLT tag for unsynchronized lyrics)
@@ -164,6 +162,7 @@ export const parseAudioMetadata = (
               artist: tags.artist,
               album: tags.album, // Add album extraction
               picture: pictureUrl,
+              pictureBlob: tags.picture ? new Blob([new Uint8Array(tags.picture.data)], { type: tags.picture.format }) : undefined,
               lyrics: lyricsText,
             });
           } catch (innerErr) {

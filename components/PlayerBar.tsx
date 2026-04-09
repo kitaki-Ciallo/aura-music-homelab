@@ -46,7 +46,7 @@ const PlayerBar: React.FC = () => {
                     onClick={() => setShowFullPlayer(true)}
                 >
                     {currentSong?.coverUrl ? (
-                        <img src={currentSong.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                        <img src={currentSong.coverUrl} alt="Cover" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-white/5 text-xs text-white/40">
                             No Cover

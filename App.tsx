@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { PlayerProvider } from './context/PlayerContext';
-import { useToast } from './hooks/useToast'; // Keep toast if needed, or move to context
 
 // Layouts & Pages
 import MainLayout from './components/layout/MainLayout';

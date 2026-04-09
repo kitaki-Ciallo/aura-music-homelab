@@ -252,21 +252,22 @@ const SmartImage: React.FC<SmartImageProps> = ({
             setFinalUrl(optimizedUrl, true);
           },
           "image/jpeg",
-          0.78,
+          0.95,
         );
       } catch {
         handleFallback();
       }
     };
 
-    imageElement.crossOrigin = "anonymous";
+    // Skip all canvas processing — display original images without recompression
+    const skipCanvasProcessing = true;
     imageElement.onload = () => {
       if (canceled) return;
       if (!imageElement.naturalWidth || !imageElement.naturalHeight) {
         handleFallback();
         return;
       }
-      loadImage();
+      setFinalUrl(src, false);
     };
     imageElement.onerror = () => {
       if (canceled) return;
@@ -295,6 +296,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
           className={imgClassName}
           style={imgStyle}
           loading={loading}
+          referrerPolicy="no-referrer"
           {...imgProps}
         />
       ) : (

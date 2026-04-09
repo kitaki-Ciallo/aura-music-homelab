@@ -6,7 +6,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   const productionBase = env.VITE_BASE_PATH || '/';
   return {
-    base: mode === 'production' ? productionBase : '/',
+    base: mode === 'production' ? './' : '/',
     server: {
       port: 3000,
       host: '0.0.0.0',
