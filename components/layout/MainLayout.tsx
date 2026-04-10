@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
 import Sidebar from '../Sidebar';
 import PlayerBar from '../PlayerBar';
 import KeyboardShortcuts from '../KeyboardShortcuts';
@@ -13,40 +12,33 @@ import { useTransition, animated } from '@react-spring/web';
 const AnimatedOutlet = () => {
     const location = useLocation();
     const element = useOutlet();
-    // Re-enable scrollbars for non-homepage routes if requested, but existing design uses custom scrollbars or hidden ones.
-    // User requested: "Global immersive scroll on homepage, traditional web scroll on artists/albums".
-    // We'll handle the class in MainLayout based on location.
 
-    const transitions = useTransition(location, {
-        keys: location.pathname,
-        from: { opacity: 0, transform: 'translate3d(0, 20px, 0)' },
-        enter: { opacity: 1, transform: 'translate3d(0, 0, 0)' },
-        leave: { opacity: 0, position: 'absolute', transform: 'translate3d(0, -20px, 0)' },
-        config: { tension: 280, friction: 30 },
-        initial: null,
+    const transitions = useTransition(location.pathname, {
+        from: { opacity: 0, y: 30 },
+        enter: { opacity: 1, y: 0 },
+        leave: { opacity: 0, y: -10 },
+        config: { tension: 260, friction: 28 },
     });
 
-    return transitions((style, item) => (
-        <animated.div style={{ ...style, width: '100%', height: '100%' }}>
-            {/* Pass the element that corresponds to this location key match */}
-            {/* Note: useOutlet returns the element for the current route. 
-             When transitioning out, we want to retain the OLD element.
-             react-spring handles this by keeping 'item' (which is location) available.
-             BUT 'element' from useOutlet changes immediately.
-             
-             To fix this, we need to clone the element or specific router setup. 
-             Given the complexity, a simple Fade-In on mount for pages is safer for now 
-             to avoid "Route not found" or empty outlet issues during transition.
-          */}
-            {/* Reverting to simple fade-in per page or just using the current element if key matches */}
-            {item.pathname === location.pathname ? element : null}
-        </animated.div>
-    ));
+    return (
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {transitions((style, pathname) => (
+                <animated.div
+                    style={{
+                        ...style,
+                        position: pathname === location.pathname ? 'relative' : 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        transform: style.y.to(y => `translate3d(0, ${y}px, 0)`),
+                    } as any}
+                >
+                    {pathname === location.pathname ? element : null}
+                </animated.div>
+            ))}
+        </div>
+    );
 };
-
-// Better approach for simple usage:
-// Just wrap Outlet in a div that animates on key change?
-// Let's try a simpler approach invoked inside MainLayout directly.
 
 const MainLayout: React.FC = () => {
     const [playlists, setPlaylists] = useState<string[]>([]);
@@ -71,22 +63,44 @@ const MainLayout: React.FC = () => {
             .catch(err => console.error("Failed to load playlists", err));
     }, []);
 
+    const drawerTransitions = useTransition(showPlaylist, {
+        from: { opacity: 0, x: 100, backdropOpacity: 0 },
+        enter: { opacity: 1, x: 0, backdropOpacity: 1 },
+        leave: { opacity: 0, x: 100, backdropOpacity: 0 },
+        config: { tension: 280, friction: 32 },
+    });
+
     return (
         <div className={`flex flex-col h-screen text-white overflow-hidden font-sans relative z-10 transition-opacity duration-[400ms] ${showFullPlayer && theme === 'fluid' ? 'opacity-0' : 'opacity-100'}`}>
             <KeyboardShortcuts />
             <div className="flex-1 flex min-h-0">
                 <Sidebar playlists={playlists} />
-
-                {/* Main Content Area */}
                 <div className="flex-1 overflow-y-auto relative no-scrollbar">
                     <AnimatedOutlet />
                 </div>
             </div>
 
             {/* Playlist Sidebar Overlay (Global) */}
-            {showPlaylist && (
-                <div className={`absolute inset-x-0 top-0 bottom-24 z-[60] flex justify-end animate-in fade-in duration-300 ${theme === 'fluid' ? 'bg-white/10 backdrop-blur-sm' : 'bg-black/40'}`}>
-                    <div className={`w-full max-w-sm h-full border-l shadow-2xl flex flex-col relative animate-in slide-in-from-right duration-300 ${theme === 'fluid' ? 'bg-white/10 backdrop-blur-3xl border-white/10' : 'bg-black/95 border-white/5'}`}>
+            {drawerTransitions((styles, item) => item && (
+                <animated.div
+                    className="absolute inset-x-0 top-0 bottom-24 z-[60] flex justify-end isolate"
+                    style={{ pointerEvents: item ? 'auto' : 'none' } as any}
+                >
+                    {/* Backdrop */}
+                    <animated.div
+                        className={`absolute inset-0 -z-10 ${theme === 'fluid' ? 'bg-white/10 backdrop-blur-sm' : 'bg-black/40'}`}
+                        style={{ opacity: styles.backdropOpacity }}
+                        onClick={() => setShowPlaylist(false)}
+                    />
+
+                    <animated.div
+                        className={`w-full max-w-sm h-full border-l shadow-2xl flex flex-col relative ${theme === 'fluid' ? 'bg-white/20 backdrop-blur-3xl saturate-150 border-white/20' : 'bg-zinc-900 border-white/5'}`}
+                        style={{
+                            opacity: styles.opacity,
+                            transform: styles.x.to(x => `translateX(${x}%)`),
+                            boxShadow: theme === 'fluid' ? '-10px 0 50px rgba(0,0,0,0.15), inset 1px 0 0 rgba(255,255,255,0.15)' : 'none'
+                        } as any}
+                    >
                         <div className="p-4 flex items-center justify-between border-b border-white/10">
                             <h2 className="text-xl font-bold">Queue</h2>
                             <button
@@ -110,14 +124,9 @@ const MainLayout: React.FC = () => {
                                 style={{ maxHeight: 'none', borderRadius: 0, position: 'relative', bottom: 'auto', right: 'auto' }}
                             />
                         </div>
-                    </div>
-                    {/* Backdrop click to close */}
-                    <div
-                        className="absolute inset-0 -z-10"
-                        onClick={() => setShowPlaylist(false)}
-                    />
-                </div>
-            )}
+                    </animated.div>
+                </animated.div>
+            ))}
 
             {/* Player Bar Area - Spans full width at bottom */}
             <div className="h-24 bg-white/10 backdrop-blur-xl border-t border-white/10 z-[70] shrink-0">
