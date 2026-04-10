@@ -69,7 +69,7 @@ const MainLayout: React.FC = () => {
             <KeyboardShortcuts />
             <div className="flex-1 flex min-h-0">
                 <Sidebar playlists={customPlaylists} onOpenImport={() => setIsImportOpen(true)} />
-                <div className="flex-1 overflow-y-auto relative no-scrollbar">
+                <div className="flex-1 overflow-y-auto relative no-scrollbar isolate transform-gpu">
                     <AnimatedOutlet />
                 </div>
             </div>
