@@ -45,14 +45,14 @@ const Library: React.FC = () => {
 
         if (coverArt.length < 4) {
             return (
-                <SmartImage src={coverArt[0].coverUrl!} alt="All Songs" imgClassName="w-40 h-40 rounded-lg shadow-xl object-cover" />
+                <SmartImage src={coverArt[0].coverUrl!} alt="All Songs" containerClassName="w-40 h-40 flex-shrink-0 rounded-lg shadow-xl overflow-hidden" imgClassName="w-full h-full object-cover" />
             );
         }
 
         return (
-            <div className="w-40 h-40 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
+            <div className="w-40 h-40 flex-shrink-0 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
                 {coverArt.map((song, i) => (
-                    <SmartImage key={i} src={song.coverUrl!} alt="" imgClassName="w-full h-full object-cover" />
+                    <SmartImage key={i} src={song.coverUrl!} alt="" containerClassName="w-full h-full" imgClassName="w-full h-full object-cover" />
                 ))}
             </div>
         );
@@ -63,7 +63,7 @@ const Library: React.FC = () => {
             <div className="flex items-end gap-6 mb-8">
                 {renderCover()}
                 <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-pink-500 mb-1">Playlist</h4>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-pink-500 mb-1">Library</h4>
                     <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">All Songs</h1>
                     <p className="text-white/60 text-sm font-medium">{songs.length} songs</p>
                 </div>
@@ -114,7 +114,7 @@ const Library: React.FC = () => {
 
                             <div className="flex items-center gap-3 overflow-hidden">
                                 {song.coverUrl && (
-                                    <SmartImage src={song.coverUrl} alt="" imgClassName="w-10 h-10 rounded object-cover border border-white/10" />
+                                    <SmartImage src={song.coverUrl} alt="" containerClassName="w-10 h-10 flex-shrink-0 rounded overflow-hidden border border-white/10" imgClassName="w-full h-full object-cover" />
                                 )}
                                 <div className="min-w-0">
                                     <div className={`text-sm font-medium truncate ${isCurrent ? 'text-pink-500' : 'text-white'}`}>{song.title}</div>
@@ -122,11 +122,11 @@ const Library: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center text-sm text-white/50 truncate">
+                            <div className="flex items-center text-sm text-white/50 truncate min-w-0">
                                 {song.album || "Unknown Album"}
                             </div>
 
-                            <div className="flex items-center justify-center text-sm text-white/40 font-tabular-nums">
+                            <div className="w-12 flex items-center justify-center text-sm text-white/40 font-tabular-nums">
                                 {song.duration ? formatTime(song.duration) : "--:--"}
                             </div>
                         </div>
