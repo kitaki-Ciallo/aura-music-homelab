@@ -4,6 +4,7 @@ import { Play, Pause, Clock } from 'lucide-react';
 import { usePlayerContext } from '../context/PlayerContext';
 import { formatTime } from '../services/utils';
 import { Song, PlayState } from '../types';
+import SmartImage from '../components/SmartImage';
 
 const Library: React.FC = () => {
     const { playIndex, currentSong, playState, togglePlay, replaceAll, library } = usePlayerContext();
@@ -43,17 +44,15 @@ const Library: React.FC = () => {
         }
 
         if (coverArt.length < 4) {
-            // If we have at least one but less than 4, just show the first one full size
-            // Or maybe a grid with repeats? Let's stick to full size for < 4 for simplicity like Playlist
             return (
-                <img src={coverArt[0].coverUrl} alt="All Songs" className="w-40 h-40 rounded-lg shadow-xl object-cover" />
+                <SmartImage src={coverArt[0].coverUrl!} alt="All Songs" imgClassName="w-40 h-40 rounded-lg shadow-xl object-cover" />
             );
         }
 
         return (
             <div className="w-40 h-40 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
                 {coverArt.map((song, i) => (
-                    <img key={i} src={song.coverUrl} alt="" className="w-full h-full object-cover" />
+                    <SmartImage key={i} src={song.coverUrl!} alt="" imgClassName="w-full h-full object-cover" />
                 ))}
             </div>
         );
@@ -115,7 +114,7 @@ const Library: React.FC = () => {
 
                             <div className="flex items-center gap-3 overflow-hidden">
                                 {song.coverUrl && (
-                                    <img src={song.coverUrl} alt="" className="w-10 h-10 rounded object-cover border border-white/10" />
+                                    <SmartImage src={song.coverUrl} alt="" imgClassName="w-10 h-10 rounded object-cover border border-white/10" />
                                 )}
                                 <div className="min-w-0">
                                     <div className={`text-sm font-medium truncate ${isCurrent ? 'text-pink-500' : 'text-white'}`}>{song.title}</div>

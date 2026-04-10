@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 import { Song, PlayState } from '../types';
 import { Play, Pause } from 'lucide-react';
+import SmartImage from '../components/SmartImage';
 
 const Albums: React.FC = () => {
     const { queue, library, playState, currentSong, replaceAll, playIndex, togglePlay } = usePlayerContext();
@@ -80,7 +81,7 @@ const Albums: React.FC = () => {
                 <div className="flex flex-col md:flex-row gap-8 mb-8 items-start">
                     <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-2xl bg-white/10 flex-shrink-0">
                         {coverUrl ? (
-                            <img src={coverUrl} alt={selectedAlbum} className="w-full h-full object-cover" />
+                            <SmartImage src={coverUrl} alt={selectedAlbum} imgClassName="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-white/20">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">
@@ -190,7 +191,7 @@ const Albums: React.FC = () => {
                         >
                             <div className="aspect-square rounded-xl overflow-hidden bg-white/10 mb-4 relative shadow-lg mx-auto w-full">
                                 {coverUrl ? (
-                                    <img src={coverUrl} alt={album} className="w-full h-full object-cover" />
+                                    <SmartImage src={coverUrl} alt={album} imgClassName="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white/20 select-none">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-50">

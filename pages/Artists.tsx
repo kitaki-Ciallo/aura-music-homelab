@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { usePlayerContext } from '../context/PlayerContext';
 import { Song, PlayState } from '../types';
 import { Play, Pause } from 'lucide-react';
+import SmartImage from '../components/SmartImage';
 
 const Artists: React.FC = () => {
     const { queue, library, playState, currentSong, replaceAll, togglePlay } = usePlayerContext();
@@ -76,7 +77,7 @@ const Artists: React.FC = () => {
                 <div className="flex flex-col md:flex-row gap-8 mb-8 items-start">
                     <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-2xl bg-white/10 flex-shrink-0">
                         {coverUrl ? (
-                            <img src={coverUrl} alt={selectedArtist} className="w-full h-full object-cover" />
+                            <SmartImage src={coverUrl} alt={selectedArtist} imgClassName="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-white/20">
                                 {selectedArtist.charAt(0).toUpperCase()}
@@ -173,7 +174,7 @@ const Artists: React.FC = () => {
                         >
                             <div className="aspect-square rounded-full overflow-hidden bg-white/10 mb-4 relative shadow-lg mx-auto w-full max-w-[160px]">
                                 {coverUrl ? (
-                                    <img src={coverUrl} alt={artist} className="w-full h-full object-cover" />
+                                    <SmartImage src={coverUrl} alt={artist} imgClassName="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white/20 select-none">
                                         {artist.charAt(0).toUpperCase()}
