@@ -6,6 +6,7 @@ import { usePlayerContext } from '../context/PlayerContext';
 import { Song, PlayState } from '../types';
 import { formatTime } from '../services/utils';
 import { useNavigate } from 'react-router-dom';
+import SmartImage from '../components/SmartImage';
 
 const Playlist: React.FC = () => {
     const { name } = useParams<{ name: string }>();
@@ -49,15 +50,15 @@ const Playlist: React.FC = () => {
 
         if (coverSongs.length < 4) {
             return (
-                <img src={coverSongs[0].coverUrl} alt={name} className="w-40 h-40 rounded-lg shadow-xl object-cover" />
+                <SmartImage src={coverSongs[0].coverUrl!} alt={name} containerClassName="w-40 h-40 flex-shrink-0 rounded-lg shadow-xl overflow-hidden" imgClassName="w-full h-full object-cover" />
             );
         }
 
         // 2x2 Grid
         return (
-            <div className="w-40 h-40 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
+            <div className="w-40 h-40 flex-shrink-0 rounded-lg shadow-xl overflow-hidden grid grid-cols-2">
                 {coverSongs.map((song, i) => (
-                    <img key={i} src={song.coverUrl} alt="" className="w-full h-full object-cover" />
+                    <SmartImage key={i} src={song.coverUrl!} alt="" containerClassName="w-full h-full" imgClassName="w-full h-full object-cover" />
                 ))}
             </div>
         );
@@ -121,7 +122,7 @@ const Playlist: React.FC = () => {
 
                             <div className="flex items-center gap-3 overflow-hidden">
                                 {song.coverUrl && (
-                                    <img src={song.coverUrl} alt="" className="w-10 h-10 rounded object-cover border border-white/10" />
+                                    <SmartImage src={song.coverUrl} alt="" containerClassName="w-10 h-10 flex-shrink-0 rounded overflow-hidden border border-white/10" imgClassName="w-full h-full object-cover" />
                                 )}
                                 <div className="min-w-0">
                                     <div className={`text-sm font-medium truncate ${isCurrent ? 'text-pink-500' : 'text-white'}`}>{song.title}</div>
@@ -129,11 +130,11 @@ const Playlist: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center text-sm text-white/50 truncate">
+                            <div className="flex items-center text-sm text-white/50 truncate min-w-0">
                                 {song.album || "Unknown Album"}
                             </div>
 
-                            <div className="flex items-center justify-center text-sm text-white/40 font-tabular-nums">
+                            <div className="w-12 flex items-center justify-center text-sm text-white/40 font-tabular-nums">
                                 {song.duration ? formatTime(song.duration) : "--:--"}
                             </div>
                         </div>

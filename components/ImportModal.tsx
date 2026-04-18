@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTransition, animated, config } from '@react-spring/web';
 import { X, Link as LinkIcon, FolderOutput, Loader2, Trash2 } from 'lucide-react';
 import { usePlayerContext } from '../context/PlayerContext';
 import { fetchNeteasePlaylist } from '../services/lyricsService';
@@ -67,8 +68,6 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [progress, setProgress] = useState('');
-
-    if (!isOpen) return null;
 
     const handleImportNetease = async () => {
         if (!neteaseUrl.trim()) return;
@@ -306,148 +305,176 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
 
     const isFluid = theme === 'fluid';
 
+    const transitions = useTransition(isOpen, {
+        from: { opacity: 0, scale: 0.95, translateY: 10, backdropOpacity: 0 },
+        enter: { opacity: 1, scale: 1, translateY: 0, backdropOpacity: 1 },
+        leave: { opacity: 0, scale: 0.95, translateY: 10, backdropOpacity: 0 },
+        config: config.stiff,
+    });
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-            <div className={`border rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] ${isFluid
-                ? "bg-white/80 backdrop-blur-3xl border-white/50"
-                : "bg-zinc-900 border-white/10"
-                }`}
-                style={isFluid ? { boxShadow: '0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.4)' } : {}}>
+        <>
+            {transitions((styles, item) => item && (
+                <animated.div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 isolate"
+                    style={{ pointerEvents: item ? 'auto' : 'none' } as any}
+                >
+                    {/* Backdrop */}
+                    <animated.div
+                        className="absolute inset-0 bg-black/30 backdrop-blur-sm -z-10"
+                        style={{ opacity: styles.backdropOpacity }}
+                        onClick={onClose}
+                    />
 
-                {/* Header */}
-                <div className={`px-6 py-4 border-b flex items-center justify-between ${isFluid ? "border-black/10 bg-white/40" : "border-white/10 bg-white/5"
-                    }`}>
-                    <h2 className={`text-xl font-bold ${isFluid ? "text-gray-900" : "text-white"}`}>Manage Playlists</h2>
-                    <button onClick={onClose} className={`p-2 rounded-full transition-colors ${isFluid ? "text-gray-500 hover:text-gray-900 hover:bg-black/5" : "text-white/50 hover:text-white hover:bg-white/10"
-                        }`}>
-                        <X size={20} />
-                    </button>
-                </div>
-
-                {/* Scrollable content with immersive scrollbar */}
-                <div className="p-6 flex-1 flex flex-col gap-8 overflow-y-auto"
-                    style={{
-                        scrollbarWidth: 'thin',
-                        scrollbarColor: isFluid ? 'rgba(0,0,0,0.2) transparent' : 'rgba(255,255,255,0.2) transparent',
-                    }}>
-
-                    {/* Import Section */}
-                    <div>
-                        <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 ${isFluid ? "text-gray-500" : "text-white/60"
-                            }`}>Import New Playlist</h3>
-
-                        <div className={`flex gap-2 mb-4 p-1 rounded-lg ${isFluid ? "bg-black/5" : "bg-black/20"}`}>
-                            <button
-                                onClick={() => setActiveTab('local')}
-                                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'local'
-                                    ? (isFluid ? 'bg-white text-gray-900 shadow-sm' : 'bg-white/10 text-white')
-                                    : (isFluid ? 'text-gray-500 hover:text-gray-800' : 'text-white/40 hover:text-white/70')
-                                    }`}
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <FolderOutput size={16} /> Local Folder
-                                </span>
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('netease')}
-                                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'netease'
-                                    ? (isFluid ? 'bg-white text-gray-900 shadow-sm' : 'bg-white/10 text-white')
-                                    : (isFluid ? 'text-gray-500 hover:text-gray-800' : 'text-white/40 hover:text-white/70')
-                                    }`}
-                            >
-                                <span className="flex items-center justify-center gap-2">
-                                    <LinkIcon size={16} /> Web Link
-                                </span>
+                    {/* Modal */}
+                    <animated.div
+                        className={`border shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] ${isFluid
+                            ? "bg-white/20 backdrop-blur-[100px] saturate-150 rounded-[32px] border-white/20"
+                            : "bg-zinc-900 rounded-2xl border-white/10"
+                            }`}
+                        style={{
+                            opacity: styles.opacity,
+                            transform: styles.translateY.to(y => `translateY(${y}px) scale(${styles.scale.get()})`),
+                            boxShadow: isFluid ? '0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' : 'none'
+                        } as any}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className={`px-6 py-4 border-b flex items-center justify-between ${isFluid ? "border-white/10 bg-white/5" : "border-white/10 bg-white/5"
+                            }`}>
+                            <h2 className={`text-xl font-bold ${isFluid ? "text-white" : "text-white"}`}>Manage Playlists</h2>
+                            <button onClick={onClose} className={`p-2 rounded-full transition-colors ${isFluid ? "text-white/50 hover:text-white hover:bg-white/10" : "text-white/50 hover:text-white hover:bg-white/10"
+                                }`}>
+                                <X size={20} />
                             </button>
                         </div>
 
-                        {error && <div className={`mb-4 text-sm ${isFluid ? "text-red-500" : "text-red-400"}`}>{error}</div>}
+                        {/* Scrollable content with immersive scrollbar */}
+                        <div className="p-6 flex-1 flex flex-col gap-8 overflow-y-auto"
+                            style={{
+                                scrollbarWidth: 'thin',
+                                scrollbarColor: 'rgba(255,255,255,0.2) transparent',
+                            }}>
 
-                        {activeTab === 'netease' ? (
-                            <div className="space-y-3">
-                                <input
-                                    type="text"
-                                    placeholder="Paste Netease Playlist Link..."
-                                    value={neteaseUrl}
-                                    onChange={(e) => setNeteaseUrl(e.target.value)}
-                                    className={`w-full rounded-lg px-4 py-3 text-sm focus:outline-none transition-colors ${isFluid
-                                        ? "bg-white/50 border border-black/10 text-gray-900 placeholder-gray-500 focus:border-pink-400 focus:ring-1 focus:ring-pink-400/30"
-                                        : "bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-pink-500/50"
-                                        }`}
-                                />
-                                <button
-                                    onClick={handleImportNetease}
-                                    disabled={loading || !neteaseUrl}
-                                    className={`w-full font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isFluid
-                                        ? "bg-pink-500 hover:bg-pink-600 disabled:bg-gray-200 disabled:text-gray-400 text-white shadow-sm"
-                                        : "bg-pink-600 hover:bg-pink-500 disabled:bg-white/10 disabled:text-white/30 text-white"
-                                        }`}
-                                >
-                                    {loading ? <Loader2 size={18} className="animate-spin" /> : 'Import Netease Playlist'}
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={handleImportLocal}
-                                disabled={loading}
-                                className={`w-full border border-dashed hover:border-pink-400 font-medium py-8 rounded-xl transition-all flex flex-col items-center justify-center gap-3 group ${isFluid
-                                    ? "border-black/20 hover:bg-pink-50/50 text-gray-500 hover:text-gray-800"
-                                    : "border-white/20 hover:bg-pink-500/10 text-white/70 hover:text-white"
-                                    }`}
-                            >
-                                {loading ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Loader2 size={32} className="animate-spin text-pink-500" />
-                                        {progress && <span className={`text-xs ${isFluid ? "text-gray-500" : "text-white/50"}`}>{progress}</span>}
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className={`p-4 rounded-full transition-colors ${isFluid ? "bg-black/5 group-hover:bg-pink-100/50" : "bg-white/5 group-hover:bg-pink-500/20"
-                                            }`}>
-                                            <FolderOutput size={32} className={`group-hover:text-pink-400 ${isFluid ? "text-gray-400" : "text-white/60"}`} />
-                                        </div>
-                                        <span>Click to Open Local Folder</span>
-                                        <span className={`text-xs ${isFluid ? "text-gray-400" : "text-white/30"}`}>Uses File System Access API — files stay on disk</span>
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
+                            {/* Import Section */}
+                            <div>
+                                <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 ${isFluid ? "text-white/60" : "text-white/60"
+                                    }`}>Import New Playlist</h3>
 
-                    {/* Manage Section */}
-                    {customPlaylists.length > 0 && (
-                        <div>
-                            <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 border-t pt-6 ${isFluid ? "text-gray-500 border-black/5" : "text-white/60 border-white/10"
-                                }`}>Your Playlists</h3>
-                            <div className="space-y-2">
-                                {customPlaylists.map(pl => (
-                                    <div key={pl.id} className={`flex items-center justify-between border p-3 rounded-lg group transition-colors ${isFluid
-                                        ? "bg-white/40 hover:bg-white/80 border-black/5"
-                                        : "bg-black/20 hover:bg-white/5 border-white/5"
-                                        }`}>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className={`text-sm font-medium truncate ${isFluid ? "text-gray-900" : "text-white"}`}>{pl.name}</span>
-                                            <span className={`text-xs ${isFluid ? "text-gray-500" : "text-white/40"}`}>{pl.songs.length} songs • {pl.type === 'netease' ? 'Web' : 'Local'}</span>
-                                        </div>
-                                        <button
-                                            onClick={() => removePlaylist(pl.id)}
-                                            className={`p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ${isFluid
-                                                ? "text-gray-400 hover:text-red-500 hover:bg-red-50"
-                                                : "text-white/30 hover:text-red-400 hover:bg-red-400/10"
+                                <div className={`flex gap-2 mb-4 p-1 rounded-lg ${isFluid ? "bg-white/10" : "bg-black/20"}`}>
+                                    <button
+                                        onClick={() => setActiveTab('local')}
+                                        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'local'
+                                            ? (isFluid ? 'bg-white/20 text-white shadow-sm' : 'bg-white/10 text-white')
+                                            : (isFluid ? 'text-white/40 hover:text-white/70' : 'text-white/40 hover:text-white/70')
+                                            }`}
+                                    >
+                                        <span className="flex items-center justify-center gap-2">
+                                            <FolderOutput size={16} /> Local Folder
+                                        </span>
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('netease')}
+                                        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${activeTab === 'netease'
+                                            ? (isFluid ? 'bg-white/20 text-white shadow-sm' : 'bg-white/10 text-white')
+                                            : (isFluid ? 'text-white/40 hover:text-white/70' : 'text-white/40 hover:text-white/70')
+                                            }`}
+                                    >
+                                        <span className="flex items-center justify-center gap-2">
+                                            <LinkIcon size={16} /> Web Link
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {error && <div className={`mb-4 text-sm ${isFluid ? "text-red-400" : "text-red-400"}`}>{error}</div>}
+
+                                {activeTab === 'netease' ? (
+                                    <div className="space-y-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Paste Netease Playlist Link..."
+                                            value={neteaseUrl}
+                                            onChange={(e) => setNeteaseUrl(e.target.value)}
+                                            className={`w-full rounded-lg px-4 py-3 text-sm focus:outline-none transition-colors ${isFluid
+                                                ? "bg-white/15 border border-white/15 text-white placeholder-white/40 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-400/20"
+                                                : "bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-pink-500/50"
                                                 }`}
-                                            title="Delete Playlist"
+                                        />
+                                        <button
+                                            onClick={handleImportNetease}
+                                            disabled={loading || !neteaseUrl}
+                                            className={`w-full font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2 ${isFluid
+                                                ? "bg-pink-600 hover:bg-pink-500 disabled:bg-white/10 disabled:text-white/30 text-white"
+                                                : "bg-pink-600 hover:bg-pink-500 disabled:bg-white/10 disabled:text-white/30 text-white"
+                                                }`}
                                         >
-                                            <Trash2 size={16} />
+                                            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Import Netease Playlist'}
                                         </button>
                                     </div>
-                                ))}
+                                ) : (
+                                    <button
+                                        onClick={handleImportLocal}
+                                        disabled={loading}
+                                        className={`w-full border border-dashed hover:border-pink-400 font-medium py-8 rounded-xl transition-all flex flex-col items-center justify-center gap-3 group ${isFluid
+                                            ? "border-white/20 hover:bg-pink-500/10 text-white/70 hover:text-white"
+                                            : "border-white/20 hover:bg-pink-500/10 text-white/70 hover:text-white"
+                                            }`}
+                                    >
+                                        {loading ? (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Loader2 size={32} className="animate-spin text-pink-500" />
+                                                {progress && <span className={`text-xs ${isFluid ? "text-white/50" : "text-white/50"}`}>{progress}</span>}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className={`p-4 rounded-full transition-colors ${isFluid ? "bg-white/5 group-hover:bg-pink-500/20" : "bg-white/5 group-hover:bg-pink-500/20"
+                                                    }`}>
+                                                    <FolderOutput size={32} className={`group-hover:text-pink-400 ${isFluid ? "text-white/60" : "text-white/60"}`} />
+                                                </div>
+                                                <span>Click to Open Local Folder</span>
+                                                <span className={`text-xs ${isFluid ? "text-white/30" : "text-white/30"}`}>Uses File System Access API — files stay on disk</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    )}
 
-                </div>
-            </div>
-        </div>
+                            {/* Manage Section */}
+                            {customPlaylists.length > 0 && (
+                                <div>
+                                    <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 border-t pt-6 ${isFluid ? "text-white/60 border-white/5" : "text-white/60 border-white/10"
+                                        }`}>Your Playlists</h3>
+                                    <div className="space-y-2">
+                                        {customPlaylists.map(pl => (
+                                            <div key={pl.id} className={`flex items-center justify-between border p-3 rounded-lg group transition-colors ${isFluid
+                                                ? "bg-white/10 hover:bg-white/15 border-white/10"
+                                                : "bg-black/20 hover:bg-white/5 border-white/5"
+                                                }`}>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className={`text-sm font-medium truncate ${isFluid ? "text-white" : "text-white"}`}>{pl.name}</span>
+                                                    <span className={`text-xs ${isFluid ? "text-white/40" : "text-white/40"}`}>{pl.songs.length} songs • {pl.type === 'netease' ? 'Web' : 'Local'}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => removePlaylist(pl.id)}
+                                                    className={`p-2 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ${isFluid
+                                                        ? "text-white/30 hover:text-red-400 hover:bg-red-400/10"
+                                                        : "text-white/30 hover:text-red-400 hover:bg-red-400/10"
+                                                        }`}
+                                                    title="Delete Playlist"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </animated.div>
+                </animated.div>
+            ))}
+        </>
     );
 };
 

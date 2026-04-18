@@ -156,7 +156,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
 
     const handleDelete = () => {
         onRemove(Array.from(selectedIds));
-        setSelectedIds(newSet);
+        setSelectedIds(new Set());
         setIsEditing(false);
     };
 
@@ -205,10 +205,10 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
     const defaultClasses = `
         absolute bottom-24 -right-8 z-50
         w-[340px] 
-        bg-white/10 backdrop-blur-[100px] saturate-150
+        bg-white/20 backdrop-blur-[100px] saturate-150
         rounded-[32px] 
-        shadow-[0_20px_50px_rgba(0,0,0,0.3)] 
-        border border-white/5
+        shadow-[0_20px_50px_rgba(0,0,0,0.25)] 
+        border border-white/20
         flex flex-col overflow-hidden
         origin-bottom-right
     `;
@@ -222,7 +222,8 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                     style={{
                         ...style,
                         maxHeight: className ? 'none' : '60vh', // Remove max-height constraint in sidebar mode
-                        ...propStyle
+                        ...propStyle,
+                        boxShadow: !className ? '0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15)' : propStyle?.boxShadow
                     }}
                     className={className || defaultClasses}
                     onClick={(e) => e.stopPropagation()}
@@ -332,7 +333,7 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({
                                             )}
 
                                             {/* Cover & Indicator */}
-                                            <div className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800 border border-white/5 shadow-sm">
+                                            <div className={`relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 border border-white/5 shadow-sm ${isCurrent && !isEditing ? 'bg-white/40' : 'bg-gray-800'}`}>
                                                 {song.coverUrl ? (
                                                     <SmartImage
                                                         src={song.coverUrl}
