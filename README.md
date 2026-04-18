@@ -51,18 +51,17 @@ Aura Music 是一个现代化的网页音乐播放器，提供沉浸式的听歌
 
 <div align="center">
 
-<table>
-<tr>
-<td><img src="./assets/screenshot1.png" alt="播放列表界面" /></td>
-<td><img src="./assets/screenshot2.png" alt="播放器界面 - 逐字歌词" /></td>
-</tr>
-<tr>
-<td align="center"><em>歌单列表 — 支持导入本地文件夹与网易云歌单</em></td>
-<td align="center"><em>全屏播放 — WebGL 流体背景 + 逐字歌词同步显示</em></td>
-</tr>
-</table>
+<img width="800" src="./assets/screenshot1.png" alt="播放列表界面" />
+<br/>
+<em>歌单列表 — 支持导入本地文件夹与网易云歌单</em>
+<br/><br/>
 
-<img width="600" src="./assets/screenshot3.png" alt="导入面板" />
+<img width="800" src="./assets/screenshot2.png" alt="播放器界面 - 逐字歌词" />
+<br/>
+<em>全屏播放 — WebGL 流体背景 + 逐字歌词同步显示</em>
+<br/><br/>
+
+<img width="800" src="./assets/screenshot3.png" alt="导入面板" />
 <br/>
 <em>导入面板 — 导入本地文件夹或粘贴网易云歌单链接</em>
 
@@ -84,7 +83,7 @@ Aura Music 是一个现代化的网页音乐播放器，提供沉浸式的听歌
 <summary>📹 <strong>查看演示视频 — 导入本地音乐</strong></summary>
 <br/>
 
-https://github.com/user-attachments/assets/导入歌曲.mp4
+https://github.com/user-attachments/assets/621ec526-1a98-413a-b9f3-b9c4d5cb5681
 
 > 视频演示了如何通过侧边栏导入本地音乐文件夹，系统自动识别音频文件并匹配歌词与封面。
 
@@ -106,7 +105,7 @@ Aura Music 提供三种视觉主题，满足不同场景的使用需求：
 <summary>📹 <strong>查看演示视频 — 切换主题</strong></summary>
 <br/>
 
-https://github.com/user-attachments/assets/切换主题.mp4
+https://github.com/user-attachments/assets/55312e41-20eb-4ef8-a5cf-a3326bd5b277
 
 > 视频演示了在 Dark、Light、Fluid 三种主题之间切换的效果。
 

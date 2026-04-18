@@ -12,6 +12,7 @@ import Albums from './pages/Albums';
 import Playlist from './pages/Playlist';
 import FullPlayer from './components/FullPlayer';
 import GlobalBackground from './components/GlobalBackground';
+import InstallPrompt from './components/InstallPrompt';
 import Search from './pages/Search';
 
 const App: React.FC = () => {
@@ -19,6 +20,7 @@ const App: React.FC = () => {
     <React.StrictMode>
       <PlayerProvider>
         <GlobalBackground />
+        <InstallPrompt />
         <Router>
           <Routes>
             <Route path="/" element={<MainLayout />}>
